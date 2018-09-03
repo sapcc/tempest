@@ -25,6 +25,8 @@ Tempest Specific Commandments
 - [T115] Check that admin tests should exist under admin path
 - [N322] Method's default argument shouldn't be mutable
 - [T116] Unsupported 'message' Exception attribute in PY3
+- [T117] Check negative tests have ``@decorators.attr(type=['negative'])``
+  applied.
 
 Test Data/Configuration
 -----------------------
@@ -106,7 +108,7 @@ Service tagging is used to specify which services are exercised by a particular
 test method. You specify the services with the ``tempest.common.utils.services``
 decorator. For example:
 
-@utils.services('compute', 'image')
+``@utils.services('compute', 'image')``
 
 Valid service tag names are the same as the list of directories in tempest.api
 that have tests.
@@ -117,6 +119,54 @@ indirectly through another service) that differs from the parent directory
 name. For example, any test that make an API call to a service other than Nova
 in ``tempest.api.compute`` would require a service tag for those services,
 however they do not need to be tagged as ``compute``.
+
+Test Attributes
+---------------
+Tempest leverages `test attributes`_ which are a simple but effective way of
+distinguishing between different "types" of API tests. A test can be "tagged"
+with such attributes using the ``decorators.attr`` decorator, for example::
+
+    @decorators.attr(type=['negative'])
+    def test_aggregate_create_aggregate_name_length_less_than_1(self):
+        [...]
+
+These test attributes can be used for test selection via regular expressions.
+For example, ``(?!.*\[.*\bslow\b.*\])(^tempest\.scenario)`` runs all the tests
+in the ``scenario`` test module, *except* for those tagged with the ``slow``
+attribute (via a negative lookahead in the regular expression). These
+attributes are used in Tempest's ``tox.ini`` as well as Tempest's Zuul job
+definitions for specifying particular batches of Tempest test suites to run.
+
+.. _test attributes: https://testtools.readthedocs.io/en/latest/for-test-authors.html?highlight=attr#test-attributes
+
+Negative Attribute
+^^^^^^^^^^^^^^^^^^
+The ``type='negative'`` attribute is used to signify that a test is a negative
+test, which is a test that handles invalid input gracefully. This attribute
+should be applied to all negative test scenarios.
+
+This attribute must be applied to each test that belongs to a negative test
+class, i.e. a test class name ending with "Negative.*" substring.
+
+Slow Attribute
+^^^^^^^^^^^^^^
+The ``type='slow'`` attribute is used to signify that a test takes a long time
+to run, relatively speaking. This attribute is usually applied to
+:ref:`scenario tests <scenario_field_guide>`, which involve a complicated
+series of API operations, the total runtime of which can be relatively long.
+This long runtime has performance implications on `Zuul`_ jobs, which is why
+the ``slow`` attribute is leveraged to run slow tests on a selective basis,
+to keep total `Zuul`_ job runtime down to a reasonable time frame.
+
+.. _Zuul: https://docs.openstack.org/infra/zuul/
+
+Smoke Attribute
+^^^^^^^^^^^^^^^
+The ``type='smoke'`` attribute is used to signify that a test is a so-called
+smoke test, which is a type of test that tests the most vital OpenStack
+functionality, like listing servers or flavors or creating volumes. The
+attribute should be sparingly applied to only the tests that sanity-check the
+most essential functionality of an OpenStack cloud.
 
 Test fixtures and resources
 ---------------------------
@@ -419,34 +469,3 @@ For new tests being added to Tempest the assumption is that the API being
 tested is considered stable and adheres to the OpenStack API stability
 guidelines. If an API is still considered experimental or in development then
 it should not be tested by Tempest until it is considered stable.
-
-Stable Support Policy
----------------------
-
-Since the `Extended Maintenance policy`_ for stable branches was adopted
-OpenStack projects will keep stable branches around after a "stable" or
-"maintained" period for a phase of indeterminate length called "Extended
-Maintenance". Prior to this resolution Tempest supported all stable branches
-which were supported upstream. This policy does not scale under the new model
-as Tempest would be responsible for gating proposed changes against an ever
-increasing number of branches. Therefore due to resource constraints, Tempest
-will only provide support for branches in the "Maintained" phase from the
-documented `Support Phases`_. When a branch moves from the *Maintained* to the
-*Extended Maintenance* phase, Tempest will tag the removal of support for that
-branch as it has in the past when a branch goes end of life.
-
-The expectation for *Extended Maintenance* phase branches is that they will continue
-running Tempest during that phase of support. Since the REST APIs are stable
-interfaces across release boundaries, branches in these phases should run
-Tempest from master as long as possible. But, because we won't be actively
-testing branches in these phases, it's possible that we'll introduce changes to
-Tempest on master which will break support on *Extended Maintenance* phase
-branches. When this happens the expectation for those branches is to either
-switch to running Tempest from a tag with support for the branch, or blacklist
-a newly introduced test (if that is the cause of the issue). Tempest will not
-be creating stable branches to support *Extended Maintenance* phase branches, as
-the burden is on the *Extended Maintenance* phase branche maintainers, not the Tempest
-project, to support that branch.
-
-.. _Extended Maintenance policy: https://governance.openstack.org/tc/resolutions/20180301-stable-branch-eol.html
-.. _Support Phases: https://docs.openstack.org/project-team-guide/stable-branches.html#maintenance-phases

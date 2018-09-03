@@ -60,6 +60,8 @@ class VolumesBackupsAdminTest(base.BaseVolumeAdminTest):
         # Create backup
         backup_name = data_utils.rand_name(self.__class__.__name__ + '-Backup')
         backup = self.create_backup(volume_id=volume['id'], name=backup_name)
+        waiters.wait_for_volume_resource_status(self.volumes_client,
+                                                volume['id'], 'available')
         self.assertEqual(backup_name, backup['name'])
 
         # Export Backup
@@ -105,16 +107,18 @@ class VolumesBackupsAdminTest(base.BaseVolumeAdminTest):
         self.addCleanup(self.volumes_client.delete_volume,
                         restore['volume_id'])
         self.assertEqual(backup['id'], restore['backup_id'])
-        waiters.wait_for_volume_resource_status(self.volumes_client,
-                                                restore['volume_id'],
-                                                'available')
+
+        # When restore operation is performed then, backup['id']
+        # goes to 'restoring' state so we need to wait for
+        # backup['id'] to become 'available'.
+        waiters.wait_for_volume_resource_status(
+            self.backups_client, backup['id'], 'available')
+        waiters.wait_for_volume_resource_status(
+            self.volumes_client, restore['volume_id'], 'available')
 
         # Verify if restored volume is there in volume list
         volumes = self.volumes_client.list_volumes()['volumes']
         self.assertIn(restore['volume_id'], [v['id'] for v in volumes])
-        waiters.wait_for_volume_resource_status(self.admin_backups_client,
-                                                import_backup['id'],
-                                                'available')
 
     @decorators.idempotent_id('47a35425-a891-4e13-961c-c45deea21e94')
     def test_volume_backup_reset_status(self):
@@ -124,6 +128,8 @@ class VolumesBackupsAdminTest(base.BaseVolumeAdminTest):
         backup_name = data_utils.rand_name(
             self.__class__.__name__ + '-Backup')
         backup = self.create_backup(volume_id=volume['id'], name=backup_name)
+        waiters.wait_for_volume_resource_status(self.volumes_client,
+                                                volume['id'], 'available')
         self.assertEqual(backup_name, backup['name'])
         # Reset backup status to error
         self.admin_backups_client.reset_backup_status(backup_id=backup['id'],

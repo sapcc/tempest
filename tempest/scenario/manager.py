@@ -94,6 +94,10 @@ class ScenarioTest(tempest.test.BaseTestCase):
         if not client:
             client = self.ports_client
         name = data_utils.rand_name(self.__class__.__name__)
+        if CONF.network.port_vnic_type and 'binding:vnic_type' not in kwargs:
+            kwargs['binding:vnic_type'] = CONF.network.port_vnic_type
+        if CONF.network.port_profile and 'binding:profile' not in kwargs:
+            kwargs['binding:profile'] = CONF.network.port_profile
         result = client.create_port(
             name=name,
             network_id=network_id,
@@ -297,7 +301,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
     def create_volume_type(self, client=None, name=None, backend_name=None):
         if not client:
-            client = self.os_admin.volume_types_v2_client
+            client = self.os_admin.volume_types_client_latest
         randomized_name = name or data_utils.rand_name(
             'volume-type-' + self.__class__.__name__)
 
@@ -443,7 +447,9 @@ class ScenarioTest(tempest.test.BaseTestCase):
                                        disk_format=img_disk_format,
                                        properties=img_properties)
         except IOError:
-            LOG.debug("A qcow2 image was not found. Try to get a uec image.")
+            LOG.warning(
+                "A(n) %s image was not found. Retrying with uec image.",
+                img_disk_format)
             kernel = self._image_create('scenario-aki', 'aki', aki_img_path)
             ramdisk = self._image_create('scenario-ari', 'ari', ari_img_path)
             properties = {'kernel_id': kernel, 'ramdisk_id': ramdisk}
@@ -541,7 +547,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
                                                 volume['id'], 'available')
 
     def ping_ip_address(self, ip_address, should_succeed=True,
-                        ping_timeout=None, mtu=None):
+                        ping_timeout=None, mtu=None, server=None):
         timeout = ping_timeout or CONF.validation.ping_timeout
         cmd = ['ping', '-c1', '-w1']
 
@@ -575,12 +581,16 @@ class ScenarioTest(tempest.test.BaseTestCase):
                       'caller': caller, 'ip': ip_address, 'timeout': timeout,
                       'result': 'expected' if result else 'unexpected'
                   })
+        if server:
+            self._log_console_output([server])
         return result
 
     def check_vm_connectivity(self, ip_address,
                               username=None,
                               private_key=None,
                               should_connect=True,
+                              extra_msg="",
+                              server=None,
                               mtu=None):
         """Check server connectivity
 
@@ -590,43 +600,36 @@ class ScenarioTest(tempest.test.BaseTestCase):
         :param should_connect: True/False indicates positive/negative test
             positive - attempt ping and ssh
             negative - attempt ping and fail if succeed
+        :param extra_msg: Message to help with debugging if ``ping_ip_address``
+            fails
+        :param server: The server whose console to log for debugging
         :param mtu: network MTU to use for connectivity validation
 
         :raises: AssertError if the result of the connectivity check does
             not match the value of the should_connect param
         """
+        LOG.debug('checking network connections to IP %s with user: %s',
+                  ip_address, username)
         if should_connect:
             msg = "Timed out waiting for %s to become reachable" % ip_address
         else:
             msg = "ip address %s is reachable" % ip_address
+        if extra_msg:
+            msg = "%s\n%s" % (extra_msg, msg)
         self.assertTrue(self.ping_ip_address(ip_address,
                                              should_succeed=should_connect,
-                                             mtu=mtu),
+                                             mtu=mtu, server=server),
                         msg=msg)
         if should_connect:
             # no need to check ssh for negative connectivity
-            self.get_remote_client(ip_address, username, private_key)
-
-    def check_public_network_connectivity(self, ip_address, username,
-                                          private_key, should_connect=True,
-                                          msg=None, servers=None, mtu=None):
-        # The target login is assumed to have been configured for
-        # key-based authentication by cloud-init.
-        LOG.debug('checking network connections to IP %s with user: %s',
-                  ip_address, username)
-        try:
-            self.check_vm_connectivity(ip_address,
-                                       username,
-                                       private_key,
-                                       should_connect=should_connect,
-                                       mtu=mtu)
-        except Exception:
-            ex_msg = 'Public network connectivity check failed'
-            if msg:
-                ex_msg += ": " + msg
-            LOG.exception(ex_msg)
-            self._log_console_output(servers)
-            raise
+            try:
+                self.get_remote_client(ip_address, username, private_key,
+                                       server=server)
+            except Exception:
+                if not extra_msg:
+                    extra_msg = 'Failed to ssh to %s' % ip_address
+                LOG.exception(extra_msg)
+                raise
 
     def create_floating_ip(self, thing, pool_name=None):
         """Create a floating IP and associates to a server on Nova"""
@@ -643,9 +646,10 @@ class ScenarioTest(tempest.test.BaseTestCase):
         return floating_ip
 
     def create_timestamp(self, ip_address, dev_name=None, mount_path='/mnt',
-                         private_key=None):
+                         private_key=None, server=None):
         ssh_client = self.get_remote_client(ip_address,
-                                            private_key=private_key)
+                                            private_key=private_key,
+                                            server=server)
         if dev_name is not None:
             ssh_client.make_fs(dev_name)
             ssh_client.exec_command('sudo mount /dev/%s %s' % (dev_name,
@@ -659,9 +663,10 @@ class ScenarioTest(tempest.test.BaseTestCase):
         return timestamp
 
     def get_timestamp(self, ip_address, dev_name=None, mount_path='/mnt',
-                      private_key=None):
+                      private_key=None, server=None):
         ssh_client = self.get_remote_client(ip_address,
-                                            private_key=private_key)
+                                            private_key=private_key,
+                                            server=server)
         if dev_name is not None:
             ssh_client.mount(dev_name, mount_path)
         timestamp = ssh_client.exec_command('sudo cat %s/timestamp'
@@ -807,8 +812,13 @@ class NetworkScenarioTest(ScenarioTest):
         return subnet
 
     def _get_server_port_id_and_ip4(self, server, ip_addr=None):
-        ports = self.os_admin.ports_client.list_ports(
-            device_id=server['id'], fixed_ip=ip_addr)['ports']
+        if ip_addr:
+            ports = self.os_admin.ports_client.list_ports(
+                device_id=server['id'],
+                fixed_ips='ip_address=%s' % ip_addr)['ports']
+        else:
+            ports = self.os_admin.ports_client.list_ports(
+                device_id=server['id'])['ports']
         # A port can have more than one IP address in some cases.
         # If the network is dual-stack (IPv4 + IPv6), this port is associated
         # with 2 subnets
@@ -1198,9 +1208,9 @@ class EncryptionScenarioTest(ScenarioTest):
     @classmethod
     def setup_clients(cls):
         super(EncryptionScenarioTest, cls).setup_clients()
-        cls.admin_volume_types_client = cls.os_admin.volume_types_v2_client
+        cls.admin_volume_types_client = cls.os_admin.volume_types_client_latest
         cls.admin_encryption_types_client =\
-            cls.os_admin.encryption_types_v2_client
+            cls.os_admin.encryption_types_client_latest
 
     def create_encryption_type(self, client=None, type_id=None, provider=None,
                                key_size=None, cipher=None,

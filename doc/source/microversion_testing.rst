@@ -338,9 +338,21 @@ Microversion tests implemented in Tempest
 
   .. _2.32: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id29
 
+  * `2.36`_
+
+  .. _2.36: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#microversion
+
   * `2.37`_
 
   .. _2.37: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id34
+
+  * `2.39`_
+
+  .. _2.39: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id35
+
+  * `2.41`_
+
+  .. _2.41: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id37
 
   * `2.42`_
 
@@ -358,21 +370,33 @@ Microversion tests implemented in Tempest
 
   .. _2.49: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id44
 
+  * `2.53`_
+
+  .. _2.53: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#maximum-in-pike
+
   * `2.54`_
 
-  .. _2.54: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id4
+  .. _2.54: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id49
 
   * `2.55`_
 
-  .. _2.55: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id49
+  .. _2.55: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id50
 
   * `2.57`_
 
-  .. _2.57: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id51
+  .. _2.57: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id52
 
   * `2.60`_
 
-  .. _2.60: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id54
+  .. _2.60: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#maximum-in-queens
+
+  * `2.61`_
+
+  .. _2.61: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id55
+
+  * `2.63`_
+
+  .. _2.63: https://docs.openstack.org/nova/latest/reference/api-microversion-history.html#id57
 
 * Volume
 

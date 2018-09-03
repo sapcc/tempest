@@ -34,6 +34,9 @@ METHOD_GET_RESOURCE = re.compile(r"^\s*def (list|show)\_.+")
 METHOD_DELETE_RESOURCE = re.compile(r"^\s*def delete_.+")
 CLASS = re.compile(r"^class .+")
 EX_ATTRIBUTE = re.compile(r'(\s+|\()(e|ex|exc|exception).message(\s+|\))')
+NEGATIVE_TEST_DECORATOR = re.compile(
+    r'\s*@decorators\.attr\(type=.*negative.*\)')
+_HAVE_NEGATIVE_DECORATOR = False
 
 
 def import_no_clients_in_api_and_scenario_tests(physical_line, filename):
@@ -287,10 +290,10 @@ def dont_put_admin_tests_on_nonadmin_path(logical_line, physical_line,
     if pep8.noqa(physical_line):
         return
 
-    if not re.match('class .*Test.*\(.*Admin.*\):', logical_line):
+    if not re.match(r'class .*Test.*\(.*Admin.*\):', logical_line):
         return
 
-    if not re.match('.\/tempest\/api\/.*\/admin\/.*', filename):
+    if not re.match(r'.\/tempest\/api\/.*\/admin\/.*', filename):
         msg = 'T115: All admin tests should exist under admin path.'
         yield(0, msg)
 
@@ -304,6 +307,29 @@ def unsupported_exception_attribute_PY3(logical_line):
     msg = ("[T116] Unsupported 'message' Exception attribute in PY3")
     if result:
         yield(0, msg)
+
+
+def negative_test_attribute_always_applied_to_negative_tests(physical_line,
+                                                             filename):
+    """Check ``@decorators.attr(type=['negative'])`` applied to negative tests.
+
+    T117
+    """
+    global _HAVE_NEGATIVE_DECORATOR
+
+    if re.match(r'.\/tempest\/api\/.*_negative.*', filename):
+
+        if NEGATIVE_TEST_DECORATOR.match(physical_line):
+            _HAVE_NEGATIVE_DECORATOR = True
+            return
+
+        if TEST_DEFINITION.match(physical_line):
+            if not _HAVE_NEGATIVE_DECORATOR:
+                return (
+                    0, "T117: Must apply `@decorators.attr(type=['negative'])`"
+                       " to all negative API tests"
+                )
+            _HAVE_NEGATIVE_DECORATOR = False
 
 
 def factory(register):
@@ -322,3 +348,4 @@ def factory(register):
     register(use_rand_uuid_instead_of_uuid4)
     register(dont_put_admin_tests_on_nonadmin_path)
     register(unsupported_exception_attribute_PY3)
+    register(negative_test_attribute_always_applied_to_negative_tests)

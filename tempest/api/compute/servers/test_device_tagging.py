@@ -320,7 +320,9 @@ class TaggedAttachmentsTest(DeviceTaggingBase):
         try:
             self.assertEmpty(md_dict['devices'])
             return True
-        except Exception:
+        except AssertionError:
+            LOG.debug("Related bug 1775947. Devices dict is not empty: %s",
+                      md_dict['devices'])
             return False
 
     @decorators.idempotent_id('3e41c782-2a89-4922-a9d2-9a188c4e7c7c')
@@ -380,5 +382,8 @@ class TaggedAttachmentsTest(DeviceTaggingBase):
         waiters.wait_for_interface_detach(self.interfaces_client,
                                           server['id'],
                                           interface['port_id'])
-        self.verify_metadata_from_api(server, ssh_client,
-                                      self.verify_empty_devices)
+        # FIXME(mriedem): The assertion that the tagged devices are removed
+        # from the metadata for the server is being skipped until bug 1775947
+        # is fixed.
+        # self.verify_metadata_from_api(server, ssh_client,
+        #                               self.verify_empty_devices)
