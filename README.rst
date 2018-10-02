@@ -111,15 +111,18 @@ as it is simpler, and quicker to work with.
 
     $ tempest run --workspace cloud-01
 
-   There is also the option to use testr directly, or any `testr`_ based test
-   runner, like `ostestr`_. For example, from the workspace dir run::
+   There is also the option to use `stestr`_ directly. For example, from
+   the workspace dir run::
 
-    $ ostestr --regex '(?!.*\[.*\bslow\b.*\])(^tempest\.(api|scenario))'
+    $ stestr run --black-regex '\[.*\bslow\b.*\]' '^tempest\.(api|scenario)'
 
-   will run the same set of tests as the default gate jobs.
+   will run the same set of tests as the default gate jobs. Or you can
+   use `unittest`_ compatible test runners such as `testr`_, `pytest`_ etc.
 
+.. _unittest: https://docs.python.org/3/library/unittest.html
 .. _testr: https://testrepository.readthedocs.org/en/latest/MANUAL.html
-.. _ostestr: https://docs.openstack.org/os-testr/latest/
+.. _stestr: https://stestr.readthedocs.org/en/latest/MANUAL.html
+.. _pytest: https://docs.pytest.org/en/latest/
 
 Library
 -------
@@ -195,21 +198,21 @@ should only be run on the unit test directory. The default value of ``test_path`
 is ``test_path=./tempest/test_discover`` which will only run test discover on the
 Tempest suite.
 
-Alternatively, there are the py27 and py35 tox jobs which will run the unit
+Alternatively, there are the py27 and py36 tox jobs which will run the unit
 tests with the corresponding version of python.
 
 One common activity is to just run a single test, you can do this with tox
-simply by specifying to just run py27 or py35 tests against a single test::
+simply by specifying to just run py27 or py36 tests against a single test::
 
-    $ tox -e py27 -- -n tempest.tests.test_microversions.TestMicroversionsTestsClass.test_config_version_none_23
+    $ tox -e py36 -- -n tempest.tests.test_microversions.TestMicroversionsTestsClass.test_config_version_none_23
 
 Or all tests in the test_microversions.py file::
 
-    $ tox -e py27 -- -n tempest.tests.test_microversions
+    $ tox -e py36 -- -n tempest.tests.test_microversions
 
 You may also use regular expressions to run any matching tests::
 
-    $ tox -e py27 -- test_microversions
+    $ tox -e py36 -- test_microversions
 
 Additionally, when running a single test, or test-file, the ``-n/--no-discover``
 argument is no longer required, however it may perform faster if included.

@@ -306,7 +306,7 @@ ComputeGroup = [
                help='Time in seconds before a shelved instance is eligible '
                     'for removing from a host.  -1 never offload, 0 offload '
                     'when shelved. This configuration value should be same as '
-                    '[nova.DEFAULT]->shelved_offload_time in nova.conf, and '
+                    'nova.conf: DEFAULT.shelved_offload_time, and '
                     'some tests will run for as long as the time.'),
     cfg.IntOpt('min_compute_nodes',
                default=1,
@@ -408,7 +408,7 @@ ComputeFeaturesGroup = [
     cfg.BoolOpt('vnc_console',
                 default=False,
                 help='Enable VNC console. This configuration value should '
-                     'be same as [nova.vnc]->vnc_enabled in nova.conf'),
+                     'be same as nova.conf: vnc.enabled'),
     cfg.StrOpt('vnc_server_header',
                default='WebSockify',
                help='Expected VNC server name (WebSockify, nginx, etc) '
@@ -416,16 +416,16 @@ ComputeFeaturesGroup = [
     cfg.BoolOpt('spice_console',
                 default=False,
                 help='Enable Spice console. This configuration value should '
-                     'be same as [nova.spice]->enabled in nova.conf'),
+                     'be same as nova.conf: spice.enabled'),
     cfg.BoolOpt('rdp_console',
                 default=False,
                 help='Enable RDP console. This configuration value should '
-                     'be same as [nova.rdp]->enabled in nova.conf'),
+                     'be same as nova.conf: rdp.enabled'),
     cfg.BoolOpt('serial_console',
                 default=False,
                 help='Enable serial console. This configuration value '
-                     'should be the same as [nova.serial_console]->enabled '
-                     'in nova.conf'),
+                     'should be the same as '
+                     'nova.conf: serial_console.enabled'),
     cfg.BoolOpt('rescue',
                 default=True,
                 help='Does the test environment support instance rescue '
@@ -470,7 +470,7 @@ ComputeFeaturesGroup = [
                      "entry 'all' indicates all filters that are included "
                      "with nova are enabled. Empty list indicates all filters "
                      "are disabled. The full list of available filters is in "
-                     "nova.conf: DEFAULT.scheduler_available_filters. If the "
+                     "nova.conf: filter_scheduler.enabled_filters. If the "
                      "default value is overridden in nova.conf by the test "
                      "environment (which means that a different set of "
                      "filters is enabled than what is included in Nova by "
@@ -547,7 +547,7 @@ ImageFeaturesGroup = [
                                   'test v2 APIs only so this config option '
                                   'will be removed.'),
     cfg.BoolOpt('api_v1',
-                default=True,
+                default=False,
                 help="Is the v1 image API enabled",
                 deprecated_for_removal=True,
                 deprecated_reason='Glance v1 APIs are deprecated and v2 APIs '
@@ -672,9 +672,11 @@ validation_group = cfg.OptGroup(name='validation',
 
 ValidationGroup = [
     cfg.BoolOpt('run_validation',
-                default=False,
+                default=True,
                 help='Enable ssh on created servers and creation of additional'
-                     ' validation resources to enable remote access'),
+                     ' validation resources to enable remote access.'
+                     ' In case the guest does not support ssh set it'
+                     ' to false'),
     cfg.BoolOpt('security_group',
                 default=True,
                 help='Enable/disable security groups.'),
@@ -836,13 +838,6 @@ VolumeFeaturesGroup = [
                 help='A list of enabled volume extensions with a special '
                      'entry all which indicates every extension is enabled. '
                      'Empty list indicates all extensions are disabled'),
-    cfg.BoolOpt('api_v1',
-                default=False,
-                help="Is the v1 volume API enabled",
-                deprecated_for_removal=True,
-                deprecated_reason="The v1 volume API has been deprecated "
-                                  "since Juno release, and the API will be "
-                                  "removed."),
     cfg.BoolOpt('api_v2',
                 default=True,
                 help="Is the v2 volume API enabled",
@@ -1236,6 +1231,11 @@ class TempestConfigProxy(object):
 
     def set_config_path(self, path):
         self._path = path
+        # FIXME(masayukig): bug#1783751 To pass the config file path to child
+        # processes, we need to set the environment variables here as a
+        # workaround.
+        os.environ['TEMPEST_CONFIG_DIR'] = os.path.dirname(path)
+        os.environ['TEMPEST_CONFIG'] = os.path.basename(path)
 
 
 CONF = TempestConfigProxy()

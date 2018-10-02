@@ -208,19 +208,6 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
                 raise
 
     @classmethod
-    def clear_resources(cls, resource_name, resources, resource_del_func):
-        LOG.debug('Clearing %s: %s', resource_name,
-                  ','.join(map(str, resources)))
-        for res_id in resources:
-            try:
-                test_utils.call_and_ignore_notfound_exc(
-                    resource_del_func, res_id)
-            except Exception as exc:
-                LOG.exception('Exception raised deleting %s: %s',
-                              resource_name, res_id)
-                LOG.exception(exc)
-
-    @classmethod
     def create_test_server(cls, validatable=False, volume_backed=False,
                            validation_resources=None, **kwargs):
         """Wrapper utility that returns a test server.
@@ -344,8 +331,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         # The compute image proxy APIs were deprecated in 2.35 so
         # use the images client directly if the API microversion being
         # used is >=2.36.
-        if api_version_utils.compare_version_header_to_response(
-                "OpenStack-API-Version", "compute 2.36", image.response, "lt"):
+        if not cls.is_requested_microversion_compatible('2.35'):
             client = cls.images_client
         else:
             client = cls.compute_images_client
@@ -354,6 +340,9 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
 
         if wait_until is not None:
             try:
+                wait_until = wait_until.upper()
+                if not cls.is_requested_microversion_compatible('2.35'):
+                    wait_until = wait_until.lower()
                 waiters.wait_for_image_status(client, image_id, wait_until)
             except lib_exc.NotFound:
                 if wait_until.upper() == 'ACTIVE':
@@ -604,8 +593,9 @@ class BaseV2ComputeAdminTest(BaseV2ComputeTest):
         self.addCleanup(client.delete_flavor, flavor['id'])
         return flavor
 
-    def get_host_for_server(self, server_id):
-        server_details = self.admin_servers_client.show_server(server_id)
+    @classmethod
+    def get_host_for_server(cls, server_id):
+        server_details = cls.admin_servers_client.show_server(server_id)
         return server_details['server']['OS-EXT-SRV-ATTR:host']
 
     def get_host_other_than(self, server_id):

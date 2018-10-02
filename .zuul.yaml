@@ -21,19 +21,19 @@
           $TEMPEST_CONFIG:
             compute:
               min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
-      test_results_stage_name: 'test_results'
+      test_results_stage_name: test_results
       zuul_copy_output:
-        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': 'logs'
-        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': 'logs'
-        '{{ devstack_base_dir }}/tempest/tempest.log': 'logs'
-        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': 'logs'
-        '{{ stage_dir }}/{{ test_results_stage_name }}.html': 'logs'
-        '{{ stage_dir }}/stackviz': 'logs'
+        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': logs
+        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': logs
+        '{{ devstack_base_dir }}/tempest/tempest.log': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
       extensions_to_txt:
-        conf: True
-        log: True
-        yaml: True
-        yml: True
+        conf: true
+        log: true
+        yaml: true
+        yml: true
     run: playbooks/devstack-tempest.yaml
     post-run: playbooks/post-tempest.yaml
 
@@ -41,10 +41,9 @@
     name: tempest-full
     parent: devstack-tempest
     # This currently works from stable/pike on.
-    branches:
-      - master
-      - stable/queens
-      - stable/pike
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/ocata).*$
     description: |
       Base integration test with Neutron networking and py27.
       Former names for this job where:
@@ -71,9 +70,10 @@
 - job:
     name: tempest-full-py3
     parent: devstack-tempest
-    branches:
-      - master
-      - stable/queens
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/ocata).*$
     description: |
       Base integration test with Neutron networking and py3.
       Former names for this job where:
@@ -82,8 +82,8 @@
     vars:
       tox_envlist: full
       devstack_localrc:
-        USE_PYTHON3: True
-        FORCE_CONFIG_DRIVE: True
+        USE_PYTHON3: true
+        FORCE_CONFIG_DRIVE: true
       devstack_services:
         s-account: false
         s-container: false
@@ -112,7 +112,7 @@
     vars:
       tox_envlist: full
       devstack_localrc:
-        FORCE_CONFIG_DRIVE: False
+        FORCE_CONFIG_DRIVE: false
         NOVA_ALLOW_MOVE_TO_SAME_HOST: false
         LIVE_MIGRATION_AVAILABLE: true
         USE_BLOCK_MIGRATION_FOR_LIVE_MIGRATION: true
@@ -162,6 +162,16 @@
       devstack_localrc:
         CINDER_ENABLED_BACKENDS: lvm:lvmdriver-1,lvm:lvmdriver-2
       tempest_concurrency: 2
+
+- job:
+    name: tempest-full-rocky
+    parent: tempest-full
+    override-checkout: stable/rocky
+
+- job:
+    name: tempest-full-rocky-py3
+    parent: tempest-full-py3
+    override-checkout: stable/rocky
 
 - job:
     name: tempest-full-queens
@@ -275,6 +285,16 @@
         TEMPEST_VOLUME_TYPE: volumev2
 
 - project:
+    templates:
+      - check-requirements
+      - integrated-gate
+      - integrated-gate-py35
+      - openstack-cover-jobs
+      - openstack-python-jobs
+      - openstack-python35-jobs
+      - openstack-python36-jobs
+      - publish-openstack-docs-pti
+      - release-notes-jobs-python3
     check:
       jobs:
         - devstack-tempest:
@@ -283,7 +303,8 @@
               - ^roles/
               - ^.zuul.yaml$
         - nova-multiattach:
-            irrelevant-files:
+            # Define list of irrelevant files to use everywhere else
+            irrelevant-files: &tempest-irrelevant-files
               - ^(test-|)requirements.txt$
               - ^.*\.rst$
               - ^doc/.*$
@@ -293,133 +314,109 @@
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
         - tempest-full-parallel:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-full-py36:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-rocky:
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-rocky-py3:
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-full-queens:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-full-queens-py3:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-full-pike:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-multinode-full:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-tox-plugin-sanity-check
         - tempest-slow:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - nova-cells-v1:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - nova-live-migration:
             voting: false
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-grenade-multinode:
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-grenade:
+            irrelevant-files: *tempest-irrelevant-files
+        - devstack-plugin-ceph-tempest:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - puppet-openstack-integration-4-scenario001-tempest-centos-7:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - puppet-openstack-integration-4-scenario002-tempest-centos-7:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - puppet-openstack-integration-4-scenario003-tempest-centos-7:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - puppet-openstack-integration-4-scenario004-tempest-centos-7:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-tempest-dvr:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-full-ocata:
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full:
+            irrelevant-files: *tempest-irrelevant-files
     gate:
       jobs:
         - nova-multiattach:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-slow:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-grenade-multinode:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-full:
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-grenade:
+            irrelevant-files: *tempest-irrelevant-files
     experimental:
       jobs:
         - tempest-cinder-v2-api:
-            irrelevant-files:
-              - ^(test-|)requirements.txt$
-              - ^.*\.rst$
-              - ^doc/.*$
-              - ^etc/.*$
-              - ^releasenotes/.*$
-              - ^setup.cfg$
-              - ^tempest/hacking/.*$
-              - ^tempest/tests/.*$
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-periodic-tempest-dsvm-all-master:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-multinode-full:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-dvr-multinode-full:
+            irrelevant-files: *tempest-irrelevant-files
+        - neutron-tempest-dvr-ha-multinode-full:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-full-test-accounts:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-full-test-accounts:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-identity-v3-test-accounts:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-full-non-admin:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-nova-v20-api:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-lvm-multibackend:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-cinder-v1:
+            irrelevant-files: *tempest-irrelevant-files
+        - devstack-plugin-ceph-tempest-py3:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-pg-full:
+            irrelevant-files: *tempest-irrelevant-files
+        - legacy-tempest-dsvm-neutron-full-opensuse-423:
+            irrelevant-files: *tempest-irrelevant-files
     periodic-stable:
       jobs:
+        - tempest-full-rocky
+        - tempest-full-rocky-py3
         - tempest-full-queens
         - tempest-full-queens-py3
         - tempest-full-pike
+        - legacy-periodic-tempest-dsvm-neutron-full-ocata
+    periodic:
+      jobs:
+        - legacy-periodic-tempest-dsvm-full-test-accounts-master
+        - legacy-periodic-tempest-dsvm-neutron-full-test-accounts-master
+        - legacy-periodic-tempest-dsvm-neutron-full-non-admin-master
+        - legacy-periodic-tempest-dsvm-all-master
