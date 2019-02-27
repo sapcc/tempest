@@ -62,7 +62,7 @@ class CredentialsTestJSON(base.BaseIdentityV3AdminTest):
                     data_utils.rand_name('NewSecret')]
         blob = '{"access": "%s", "secret": "%s"}' % (new_keys[0], new_keys[1])
         update_body = self.creds_client.update_credential(
-            cred['id'], blob=blob, project_id=self.projects[1],
+            cred['id'], user_id=self.user_body['id'], blob=blob, project_id=self.projects[1],
             type='ec2')['credential']
         update_body['blob'] = json.loads(update_body['blob'])
         self.assertEqual(cred['id'], update_body['id'])
@@ -94,7 +94,7 @@ class CredentialsTestJSON(base.BaseIdentityV3AdminTest):
             created_cred_ids.append(cred['id'])
             self.addCleanup(self._delete_credential, cred['id'])
 
-        creds = self.creds_client.list_credentials()['credentials']
+        creds = self.creds_client.list_credentials(user_id=self.user_body['id'])['credentials']
 
         for i in creds:
             fetched_cred_ids.append(i['id'])
