@@ -20,6 +20,7 @@ import tempfile
 
 from oslo_concurrency import lockutils
 from oslo_config import cfg
+from oslo_config import types
 from oslo_log import log as logging
 
 from tempest.lib import exceptions
@@ -101,7 +102,7 @@ AuthGroup = [
                deprecated_group='identity'),
     cfg.StrOpt('admin_domain_name',
                default='Default',
-               help="Admin domain name for authentication (Keystone V3)."
+               help="Admin domain name for authentication (Keystone V3). "
                     "The same domain applies to user and project",
                deprecated_group='identity'),
 ]
@@ -170,15 +171,35 @@ IdentityGroup = [
     cfg.IntOpt('user_lockout_failure_attempts',
                default=2,
                help="The number of unsuccessful login attempts the user is "
-                    "allowed before having the account locked."),
+                    "allowed before having the account locked. This only "
+                    "takes effect when identity-feature-enabled."
+                    "security_compliance is set to 'True'. For more details, "
+                    "refer to keystone config options keystone.conf:"
+                    "security_compliance.lockout_failure_attempts. "
+                    "This feature is disabled by default in keystone."),
     cfg.IntOpt('user_lockout_duration',
                default=5,
                help="The number of seconds a user account will remain "
-                    "locked."),
+                    "locked. This only takes "
+                    "effect when identity-feature-enabled.security_compliance "
+                    "is set to 'True'. For more details, refer to "
+                    "keystone config options "
+                    "keystone.conf:security_compliance.lockout_duration. "
+                    "Setting this option will have no effect unless you also "
+                    "set identity.user_lockout_failure_attempts."),
     cfg.IntOpt('user_unique_last_password_count',
                default=2,
                help="The number of passwords for a user that must be unique "
-                    "before an old password can be reused."),
+                    "before an old password can be reused. This only takes "
+                    "effect when identity-feature-enabled.security_compliance "
+                    "is set to 'True'. "
+                    "This config option corresponds to keystone.conf: "
+                    "security_compliance.unique_last_password_count, whose "
+                    "default value is 0 meaning disabling this feature. "
+                    "NOTE: This config option value must be same as "
+                    "keystone.conf: security_compliance.unique_last_password_"
+                    "count otherwise test might fail"
+               ),
 ]
 
 service_clients_group = cfg.OptGroup(name='service-clients',
@@ -242,7 +263,13 @@ IdentityFeatureGroup = [
     cfg.BoolOpt('application_credentials',
                 default=False,
                 help='Does the environment have application credentials '
-                     'enabled?')
+                     'enabled?'),
+    cfg.BoolOpt('immutable_user_source',
+                default=False,
+                help='Set to True if the environment has a read-only '
+                     'user source. This will skip all tests that attempt to '
+                     'create, delete, or modify users. This should not be set '
+                     'to True if using dynamic credentials')
 ]
 
 compute_group = cfg.OptGroup(name='compute',
@@ -338,6 +365,38 @@ ComputeGroup = [
                     "which require a microversion. Valid values are string "
                     "with format 'X.Y' or string 'latest'"),
 ]
+
+placement_group = cfg.OptGroup(name='placement',
+                               title='Placement Service Options')
+
+PlacementGroup = [
+    cfg.StrOpt('endpoint_type',
+               default='public',
+               choices=['public', 'admin', 'internal'],
+               help="The endpoint type to use for the placement service."),
+    cfg.StrOpt('catalog_type',
+               default='placement',
+               help="Catalog type of the Placement service."),
+    cfg.StrOpt('region',
+               default='RegionOne',
+               help="The placement region name to use. If empty, the value "
+                    "of [identity]/region is used instead. If no such region "
+                    "is found in the service catalog, the first region found "
+                    "is used."),
+    cfg.StrOpt('min_microversion',
+               default=None,
+               help="Lower version of the test target microversion range. "
+                    "The format is 'X.Y', where 'X' and 'Y' are int values. "
+                    "Valid values are string with format 'X.Y' or string "
+                    "'latest'"),
+    cfg.StrOpt('max_microversion',
+               default=None,
+               help="Upper version of the test target microversion range. "
+                    "The format is 'X.Y', where 'X' and 'Y' are int values. "
+                    "Valid values are string with format 'X.Y' or string "
+                    "'latest'"),
+]
+
 
 compute_features_group = cfg.OptGroup(name='compute-feature-enabled',
                                       title="Enabled Compute Service Features")
@@ -463,20 +522,30 @@ ComputeFeaturesGroup = [
     cfg.BoolOpt('config_drive',
                 default=True,
                 help='Enable special configuration drive with metadata.'),
-    cfg.ListOpt('scheduler_available_filters',
-                default=['all'],
-                help="A list of enabled filters that nova will accept as hints"
-                     " to the scheduler when creating a server. A special "
-                     "entry 'all' indicates all filters that are included "
-                     "with nova are enabled. Empty list indicates all filters "
-                     "are disabled. The full list of available filters is in "
-                     "nova.conf: filter_scheduler.enabled_filters. If the "
+    cfg.ListOpt('scheduler_enabled_filters',
+                default=["RetryFilter", "AvailabilityZoneFilter",
+                         "ComputeFilter", "ComputeCapabilitiesFilter",
+                         "ImagePropertiesFilter",
+                         "ServerGroupAntiAffinityFilter",
+                         "ServerGroupAffinityFilter"],
+                help="A list of enabled filters that Nova will accept as "
+                     "hints to the scheduler when creating a server. If the "
                      "default value is overridden in nova.conf by the test "
                      "environment (which means that a different set of "
                      "filters is enabled than what is included in Nova by "
-                     "default) then, this option must be configured to "
+                     "default), then this option must be configured to "
                      "contain the same filters that Nova uses in the test "
-                     "environment."),
+                     "environment. A special entry 'all' indicates all "
+                     "filters that are included with Nova are enabled. If "
+                     "using 'all', be sure to enable all filters in "
+                     "nova.conf, as tests can fail in unpredictable ways if "
+                     "Nova's and Tempest's enabled filters don't match. "
+                     "Empty list indicates all filters are disabled. The "
+                     "full list of enabled filters is in nova.conf: "
+                     "filter_scheduler.enabled_filters.",
+                deprecated_opts=[cfg.DeprecatedOpt(
+                    'scheduler_available_filters',
+                    group='compute-feature-enabled')]),
     cfg.BoolOpt('swap_volume',
                 default=False,
                 help='Does the test environment support in-place swapping of '
@@ -559,6 +628,7 @@ ImageFeaturesGroup = [
 network_group = cfg.OptGroup(name='network',
                              title='Network Service Options')
 
+ProfileType = types.Dict(types.List(types.String(), bounds=True))
 NetworkGroup = [
     cfg.StrOpt('catalog_type',
                default='network',
@@ -622,10 +692,11 @@ NetworkGroup = [
                     " with pre-configured ports."
                     " Supported ports are:"
                     " ['normal','direct','macvtap']"),
-    cfg.DictOpt('port_profile',
-                default={},
-                help="port profile to use when launching instances"
-                     " with pre-configured ports."),
+    cfg.Opt('port_profile',
+            type=ProfileType,
+            default={},
+            help="port profile to use when launching instances"
+                 " with pre-configured ports."),
     cfg.ListOpt('default_network',
                 default=["1.0.0.0/16", "2.0.0.0/16"],
                 help="List of ip pools"
@@ -1060,6 +1131,7 @@ _opts = [
     (scenario_group, ScenarioGroup),
     (service_available_group, ServiceAvailableGroup),
     (debug_group, DebugGroup),
+    (placement_group, PlacementGroup),
     (None, DefaultGroup)
 ]
 

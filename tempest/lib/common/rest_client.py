@@ -70,6 +70,7 @@ class RestClient(object):
     :param str http_timeout: Timeout in seconds to wait for the http request to
                              return
     :param str proxy_url: http proxy url to use.
+    :param bool follow_redirects: Set to false to stop following redirects.
     """
 
     # The version of the API this client implements
@@ -82,7 +83,7 @@ class RestClient(object):
                  build_interval=1, build_timeout=60,
                  disable_ssl_certificate_validation=False, ca_certs=None,
                  trace_requests='', name=None, http_timeout=None,
-                 proxy_url=None):
+                 proxy_url=None, follow_redirects=True):
         self.auth_provider = auth_provider
         self.service = service
         self.region = region
@@ -107,11 +108,11 @@ class RestClient(object):
             self.http_obj = http.ClosingProxyHttp(
                 proxy_url,
                 disable_ssl_certificate_validation=dscv, ca_certs=ca_certs,
-                timeout=http_timeout)
+                timeout=http_timeout, follow_redirects=follow_redirects)
         else:
             self.http_obj = http.ClosingHttp(
                 disable_ssl_certificate_validation=dscv, ca_certs=ca_certs,
-                timeout=http_timeout)
+                timeout=http_timeout, follow_redirects=follow_redirects)
 
     def get_headers(self, accept_type=None, send_type=None):
         """Return the default headers which will be used with outgoing requests
@@ -281,7 +282,7 @@ class RestClient(object):
     def get(self, url, headers=None, extra_headers=False):
         """Send a HTTP GET request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the get request to
         :param dict headers: The headers to use for the request
         :param bool extra_headers: Boolean value than indicates if the headers
                                    returned by the get_headers() method are to
@@ -296,7 +297,7 @@ class RestClient(object):
     def delete(self, url, headers=None, body=None, extra_headers=False):
         """Send a HTTP DELETE request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the delete request to
         :param dict headers: The headers to use for the request
         :param dict body: the request body
         :param bool extra_headers: Boolean value than indicates if the headers
@@ -312,7 +313,7 @@ class RestClient(object):
     def patch(self, url, body, headers=None, extra_headers=False):
         """Send a HTTP PATCH request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the patch request to
         :param dict body: the request body
         :param dict headers: The headers to use for the request
         :param bool extra_headers: Boolean value than indicates if the headers
@@ -328,7 +329,7 @@ class RestClient(object):
     def put(self, url, body, headers=None, extra_headers=False, chunked=False):
         """Send a HTTP PUT request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the put request to
         :param dict body: the request body
         :param dict headers: The headers to use for the request
         :param bool extra_headers: Boolean value than indicates if the headers
@@ -345,7 +346,7 @@ class RestClient(object):
     def head(self, url, headers=None, extra_headers=False):
         """Send a HTTP HEAD request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the head request to
         :param dict headers: The headers to use for the request
         :param bool extra_headers: Boolean value than indicates if the headers
                                    returned by the get_headers() method are to
@@ -360,7 +361,7 @@ class RestClient(object):
     def copy(self, url, headers=None, extra_headers=False):
         """Send a HTTP COPY request using keystone service catalog and auth
 
-        :param str url: the relative url to send the post request to
+        :param str url: the relative url to send the copy request to
         :param dict headers: The headers to use for the request
         :param bool extra_headers: Boolean value than indicates if the headers
                                    returned by the get_headers() method are to
@@ -373,7 +374,7 @@ class RestClient(object):
         return self.request('COPY', url, extra_headers, headers)
 
     def get_versions(self):
-        """Get the versions on a endpoint from the keystone catalog
+        """Get the versions on an endpoint from the keystone catalog
 
         This method will make a GET request on the baseurl from the keystone
         catalog to return a list of API versions. It is expected that a GET
@@ -525,7 +526,7 @@ class RestClient(object):
         if (resp.status == 205 and
             0 != len(set(resp.keys()) - set(('status',)) -
                      self.response_header_lc - self.general_header_lc)):
-                        raise exceptions.ResponseWithEntity()
+            raise exceptions.ResponseWithEntity()
         # NOTE(afazekas)
         # Now the swift sometimes (delete not empty container)
         # returns with non json error response, we can create new rest class

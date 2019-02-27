@@ -197,7 +197,7 @@ class TempestCleanup(command.Command):
             **kwargs))
         kwargs = {'data': project_data,
                   'is_dry_run': is_dry_run,
-                  'saved_state_json': None,
+                  'saved_state_json': self.json_data,
                   'is_preserve': is_preserve,
                   'is_save_state': False,
                   'project_id': project_id}
@@ -279,7 +279,7 @@ class TempestCleanup(command.Command):
                                                        self.admin_id,
                                                        self.admin_role_id)
             except Exception as ex:
-                LOG.exception("Failed removing role from project which still"
+                LOG.exception("Failed removing role from project which still "
                               "exists, exception: %s", ex)
 
     def _project_exists(self, project_id):
@@ -305,13 +305,17 @@ class TempestCleanup(command.Command):
             svc = service(admin_mgr, **kwargs)
             svc.run()
 
+        for service in self.project_services:
+            svc = service(admin_mgr, **kwargs)
+            svc.run()
+
         with open(SAVED_STATE_JSON, 'w+') as f:
             f.write(json.dumps(data,
                     sort_keys=True, indent=2, separators=(',', ': ')))
 
-    def _load_json(self):
+    def _load_json(self, saved_state_json=SAVED_STATE_JSON):
         try:
-            with open(SAVED_STATE_JSON) as json_file:
+            with open(saved_state_json, 'rb') as json_file:
                 self.json_data = json.load(json_file)
 
         except IOError as ex:

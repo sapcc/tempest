@@ -65,6 +65,8 @@ class BaseAttachVolumeTest(base.BaseV2ComputeTest):
 class AttachVolumeTestJSON(BaseAttachVolumeTest):
 
     @decorators.idempotent_id('52e9045a-e90d-4c0d-9087-79d657faffff')
+    # This test is conditionally marked slow if SSH validation is enabled.
+    @decorators.attr(type='slow', condition=CONF.validation.run_validation)
     def test_attach_detach_volume(self):
         # Stop and Start a server with an attached volume, ensuring that
         # the volume remains attached.
@@ -84,6 +86,11 @@ class AttachVolumeTestJSON(BaseAttachVolumeTest):
             linux_client.validate_authentication()
 
         volume = self.create_volume()
+
+        # NOTE: As of the 12.0.0 Liberty release, the Nova libvirt driver
+        # no longer honors a user-supplied device name, in that case
+        # CONF.compute.volume_device_name must be set the equal value as
+        # the libvirt auto-assigned one
         attachment = self.attach_volume(server, volume,
                                         device=('/dev/%s' % self.device))
 
@@ -121,8 +128,7 @@ class AttachVolumeTestJSON(BaseAttachVolumeTest):
         # List volume attachment of the server
         server, _ = self._create_server()
         volume_1st = self.create_volume()
-        attachment_1st = self.attach_volume(server, volume_1st,
-                                            device=('/dev/%s' % self.device))
+        attachment_1st = self.attach_volume(server, volume_1st)
         body = self.servers_client.list_volume_attachments(
             server['id'])['volumeAttachments']
         self.assertEqual(1, len(body))
@@ -234,8 +240,7 @@ class AttachVolumeShelveTestJSON(BaseAttachVolumeTest):
         volume = self.create_volume()
         num_vol = self._count_volumes(server, validation_resources)
         self._shelve_server(server, validation_resources)
-        attachment = self.attach_volume(server, volume,
-                                        device=('/dev/%s' % self.device))
+        attachment = self.attach_volume(server, volume)
 
         # Unshelve the instance and check that attached volume exists
         self._unshelve_server_and_check_volumes(
@@ -264,7 +269,7 @@ class AttachVolumeShelveTestJSON(BaseAttachVolumeTest):
         self._shelve_server(server, validation_resources)
 
         # Attach and then detach the volume
-        self.attach_volume(server, volume, device=('/dev/%s' % self.device))
+        self.attach_volume(server, volume)
         self.servers_client.detach_volume(server['id'], volume['id'])
         waiters.wait_for_volume_resource_status(self.volumes_client,
                                                 volume['id'], 'available')

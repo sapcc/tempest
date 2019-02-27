@@ -457,7 +457,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
             else:
                 msg = ('When validation.connect_method equals floating, '
                        'validation_resources cannot be None')
-                raise exceptions.InvalidParam(invalid_param=msg)
+                raise lib_exc.InvalidParam(invalid_param=msg)
         elif CONF.validation.connect_method == 'fixed':
             addresses = server['addresses'][CONF.validation.network_for_ssh]
             for address in addresses:
@@ -477,7 +477,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         """Create a volume and wait for it to become 'available'.
 
         :param image_ref: Specify an image id to create a bootable volume.
-        :**kwargs: other parameters to create volume.
+        :param kwargs: other parameters to create volume.
         :returns: The available volume.
         """
         if 'size' not in kwargs:

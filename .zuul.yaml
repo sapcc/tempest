@@ -1,13 +1,59 @@
 - job:
     name: devstack-tempest
     parent: devstack
-    nodeset: openstack-single-node
     description: |
       Base Tempest job.
 
       This Tempest job provides the base for both the single and multi-node
       test setup. To run a multi-node test inherit from devstack-tempest and
       set the nodeset to a multi-node one.
+    required-projects:
+      - git.openstack.org/openstack/tempest
+    timeout: 7200
+    roles:
+      - zuul: git.openstack.org/openstack-dev/devstack
+    vars:
+      devstack_services:
+        tempest: true
+      devstack_local_conf:
+        test-config:
+          $TEMPEST_CONFIG:
+            compute:
+              min_compute_nodes: "{{ groups['compute'] | default(['controller']) | length }}"
+      test_results_stage_name: test_results
+      zuul_copy_output:
+        '{{ devstack_base_dir }}/tempest/etc/tempest.conf': logs
+        '{{ devstack_base_dir }}/tempest/etc/accounts.yaml': logs
+        '{{ devstack_base_dir }}/tempest/tempest.log': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.subunit': logs
+        '{{ stage_dir }}/{{ test_results_stage_name }}.html': logs
+        '{{ stage_dir }}/stackviz': logs
+      extensions_to_txt:
+        conf: true
+        log: true
+        yaml: true
+        yml: true
+    run: playbooks/devstack-tempest.yaml
+    post-run: playbooks/post-tempest.yaml
+
+- job:
+    name: tempest-all
+    parent: devstack-tempest
+    description: |
+      Integration test that runs all tests.
+      Former name for this job was:
+        * legacy-periodic-tempest-dsvm-all-master
+    vars:
+      tox_envlist: all
+      tempest_test_regex: tempest
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true
+
+- job:
+    name: devstack-tempest-ipv6
+    parent: devstack-ipv6
+    description: |
+      Base Tempest IPv6 job.
     required-projects:
       - git.openstack.org/openstack/tempest
     timeout: 7200
@@ -53,6 +99,38 @@
       tox_envlist: full
       devstack_localrc:
         ENABLE_FILE_INJECTION: true
+        ENABLE_VOLUME_MULTIATTACH: true
+
+- job:
+    name: tempest-full-oslo-master
+    parent: tempest-full
+    description: |
+      Integration test using current git of oslo libs.
+      This ensures that when oslo libs get released that they
+      do not break OpenStack server projects.
+
+      Former name for this job was
+      periodic-tempest-dsvm-oslo-latest-full-master.
+    timeout: 10800
+    required-projects:
+      - git.openstack.org/openstack/oslo.cache
+      - git.openstack.org/openstack/oslo.concurrency
+      - git.openstack.org/openstack/oslo.config
+      - git.openstack.org/openstack/oslo.context
+      - git.openstack.org/openstack/oslo.db
+      - git.openstack.org/openstack/oslo.i18n
+      - git.openstack.org/openstack/oslo.log
+      - git.openstack.org/openstack/oslo.messaging
+      - git.openstack.org/openstack/oslo.middleware
+      - git.openstack.org/openstack/oslo.policy
+      - git.openstack.org/openstack/oslo.privsep
+      - git.openstack.org/openstack/oslo.reports
+      - git.openstack.org/openstack/oslo.rootwrap
+      - git.openstack.org/openstack/oslo.serialization
+      - git.openstack.org/openstack/oslo.service
+      - git.openstack.org/openstack/oslo.utils
+      - git.openstack.org/openstack/oslo.versionedobjects
+      - git.openstack.org/openstack/oslo.vmware
 
 - job:
     name: tempest-full-parallel
@@ -84,6 +162,29 @@
       devstack_localrc:
         USE_PYTHON3: true
         FORCE_CONFIG_DRIVE: true
+        ENABLE_VOLUME_MULTIATTACH: true
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
+
+- job:
+    name: tempest-full-py3-ipv6
+    parent: devstack-tempest-ipv6
+    # This currently works from stable/pike on.
+    # Before stable/pike, legacy version of tempest-full
+    # 'legacy-tempest-dsvm-neutron-full' run.
+    branches: ^(?!stable/ocata).*$
+    description: |
+      Base integration test with Neutron networking, IPv6 and py3.
+    vars:
+      tox_envlist: full
+      devstack_localrc:
+        USE_PYTHON3: true
+        FORCE_CONFIG_DRIVE: true
       devstack_services:
         s-account: false
         s-container: false
@@ -95,7 +196,7 @@
 - job:
     name: tempest-multinode-full
     parent: devstack-tempest
-    nodeset: openstack-two-node
+    nodeset: openstack-two-node-bionic
     # Until the devstack changes are backported, only run this on master
     branches:
       - master
@@ -123,6 +224,13 @@
           LIVE_MIGRATION_AVAILABLE: true
           USE_BLOCK_MIGRATION_FOR_LIVE_MIGRATION: true
 
+- job:
+    name: tempest-multinode-full-py3
+    parent: tempest-multinode-full
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: true
+
 - nodeset:
     name: openstack-bionic-node
     nodes:
@@ -133,14 +241,23 @@
         nodes:
           - controller
 
+- nodeset:
+    name: openstack-opensuse150-node
+    nodes:
+      - name: controller
+        label: opensuse-150
+    groups:
+      - name: tempest
+        nodes:
+          - controller
+
 - job:
-    name: tempest-full-py36
+    name: tempest-full-py3-opensuse150
     parent: tempest-full-py3
-    nodeset: openstack-bionic-node
-    branches:
-      - master
+    nodeset: openstack-opensuse150-node
     description: |
-      Base integration test with Neutron networking and py36.
+      Base integration test with Neutron networking and py36 running
+      on openSUSE Leap 15.0
     voting: false
 
 - job:
@@ -151,7 +268,7 @@
     description: |
       This multinode integration job will run all the tests tagged as slow.
       It enables the lvm multibackend setup to cover few scenario tests.
-      This job will run only slow tests(API or Scenario) serially.
+      This job will run only slow tests (API or Scenario) serially.
 
       Former names for this job were:
         * legacy-tempest-dsvm-neutron-scenario-multinode-lvm-multibackend
@@ -161,31 +278,51 @@
       tox_envlist: slow-serial
       devstack_localrc:
         CINDER_ENABLED_BACKENDS: lvm:lvmdriver-1,lvm:lvmdriver-2
+        ENABLE_VOLUME_MULTIATTACH: true
       tempest_concurrency: 2
+
+- job:
+    name: tempest-slow-py3
+    parent: tempest-slow
+    vars:
+      devstack_localrc:
+        USE_PYTHON3: true
+      devstack_services:
+        s-account: false
+        s-container: false
+        s-object: false
+        s-proxy: false
+        # without Swift, c-bak cannot run (in the Gate at least)
+        c-bak: false
 
 - job:
     name: tempest-full-rocky
     parent: tempest-full
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/rocky
 
 - job:
     name: tempest-full-rocky-py3
     parent: tempest-full-py3
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/rocky
 
 - job:
     name: tempest-full-queens
     parent: tempest-full
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/queens
 
 - job:
     name: tempest-full-queens-py3
     parent: tempest-full-py3
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/queens
 
 - job:
     name: tempest-full-pike
     parent: tempest-full
+    nodeset: openstack-single-node-xenial
     override-checkout: stable/pike
 
 - job:
@@ -206,22 +343,26 @@
       - ^tempest/hacking/.*$
       - ^tempest/tests/.*$
     required-projects:
+      - git.openstack.org/openstack/airship-tempest-plugin
       - git.openstack.org/openstack/almanach
       - git.openstack.org/openstack/aodh
       - git.openstack.org/openstack/barbican-tempest-plugin
+      - git.openstack.org/openstack/blazar-tempest-plugin
       - git.openstack.org/openstack/ceilometer
-      - git.openstack.org/openstack/cinder
-      - git.openstack.org/openstack/congress
+      - git.openstack.org/openstack/cinder-tempest-plugin
+      - git.openstack.org/openstack/cloudkitty-tempest-plugin
+      - git.openstack.org/openstack/congress-tempest-plugin
       - git.openstack.org/openstack/designate-tempest-plugin
-      - git.openstack.org/openstack/ec2-api
+      - git.openstack.org/openstack/ec2api-tempest-plugin
       - git.openstack.org/openstack/freezer
       - git.openstack.org/openstack/freezer-api
       - git.openstack.org/openstack/freezer-tempest-plugin
+      - git.openstack.org/openstack/gabbi-tempest
       - git.openstack.org/openstack/gce-api
       - git.openstack.org/openstack/glare
-      - git.openstack.org/openstack/heat
+      - git.openstack.org/openstack/heat-tempest-plugin
       - git.openstack.org/openstack/intel-nfv-ci-tests
-      - git.openstack.org/openstack/ironic
+      - git.openstack.org/openstack/ironic-tempest-plugin
       - git.openstack.org/openstack/ironic-inspector
       - git.openstack.org/openstack/keystone-tempest-plugin
       - git.openstack.org/openstack/kingbird
@@ -230,19 +371,21 @@
       - git.openstack.org/openstack/magnum-tempest-plugin
       - git.openstack.org/openstack/manila
       - git.openstack.org/openstack/manila-tempest-plugin
-      - git.openstack.org/openstack/mistral
+      - git.openstack.org/openstack/mistral-tempest-plugin
       - git.openstack.org/openstack/mogan
       - git.openstack.org/openstack/monasca-api
       - git.openstack.org/openstack/monasca-log-api
-      - git.openstack.org/openstack/murano
+      - git.openstack.org/openstack/monasca-tempest-plugin
+      - git.openstack.org/openstack/murano-tempest-plugin
+      - git.openstack.org/openstack/networking-ansible
       - git.openstack.org/openstack/networking-bgpvpn
       - git.openstack.org/openstack/networking-cisco
       - git.openstack.org/openstack/networking-fortinet
       - git.openstack.org/openstack/networking-generic-switch
-      - git.openstack.org/openstack/networking-l2gw
+      - git.openstack.org/openstack/networking-l2gw-tempest-plugin
       - git.openstack.org/openstack/networking-midonet
-      - git.openstack.org/openstack/networking-plumgrid
       - git.openstack.org/openstack/networking-sfc
+      - git.openstack.org/openstack/networking-spp
       - git.openstack.org/openstack/neutron
       - git.openstack.org/openstack/neutron-dynamic-routing
       - git.openstack.org/openstack/neutron-fwaas
@@ -251,21 +394,25 @@
       - git.openstack.org/openstack/neutron-vpnaas
       - git.openstack.org/openstack/nova-lxd
       - git.openstack.org/openstack/novajoin-tempest-plugin
+      - git.openstack.org/openstack/octavia
       - git.openstack.org/openstack/octavia-tempest-plugin
       - git.openstack.org/openstack/oswin-tempest-plugin
       - git.openstack.org/openstack/panko
       - git.openstack.org/openstack/patrole
+      - git.openstack.org/openstack/python-watcherclient
       - git.openstack.org/openstack/qinling
       - git.openstack.org/openstack/requirements
       - git.openstack.org/openstack/sahara-tests
       - git.openstack.org/openstack/senlin
       - git.openstack.org/openstack/senlin-tempest-plugin
       - git.openstack.org/openstack/tap-as-a-service
+      - git.openstack.org/openstack/telemetry-tempest-plugin
       - git.openstack.org/openstack/tempest-horizon
-      - git.openstack.org/openstack/trio2o
-      - git.openstack.org/openstack/trove
+      - git.openstack.org/openstack/tobiko
+      - git.openstack.org/openstack/tripleo-common-tempest-plugin
+      - git.openstack.org/openstack/trove-tempest-plugin
       - git.openstack.org/openstack/valet
-      - git.openstack.org/openstack/vitrage
+      - git.openstack.org/openstack/vitrage-tempest-plugin
       - git.openstack.org/openstack/vmware-nsx-tempest-plugin
       - git.openstack.org/openstack/watcher-tempest-plugin
       - git.openstack.org/openstack/zaqar-tempest-plugin
@@ -284,15 +431,54 @@
       devstack_localrc:
         TEMPEST_VOLUME_TYPE: volumev2
 
+- job:
+    name: tempest-full-test-account-py3
+    parent: tempest-full-py3
+    description: |
+      This job runs the full set of tempest tests using pre-provisioned
+      credentials instead of dynamic credentials and py3.
+      Former names for this job were:
+        - legacy-tempest-dsvm-full-test-accounts
+        - legacy-tempest-dsvm-neutron-full-test-accounts
+        - legacy-tempest-dsvm-identity-v3-test-accounts
+    vars:
+      devstack_localrc:
+        TEMPEST_USE_TEST_ACCOUNTS: True
+
+- job:
+    name: tempest-full-test-account-no-admin-py3
+    parent: tempest-full-test-account-py3
+    description: |
+      This job runs the full set of tempest tests using pre-provisioned
+      credentials and py3 without having an admin account.
+      Former name for this job was:
+        - legacy-tempest-dsvm-neutron-full-non-admin
+
+    vars:
+      devstack_localrc:
+        TEMPEST_HAS_ADMIN: False
+
+- job:
+    name: tempest-pg-full
+    parent: tempest-full
+    description: |
+      Base integration test with Neutron networking and py27 and PostgreSQL.
+      Former name for this job was legacy-tempest-dsvm-neutron-pg-full.
+    vars:
+      devstack_localrc:
+        ENABLE_FILE_INJECTION: true
+        DATABASE_TYPE: postgresql
+
 - project:
     templates:
       - check-requirements
       - integrated-gate
-      - integrated-gate-py35
+      - integrated-gate-py3
       - openstack-cover-jobs
       - openstack-python-jobs
       - openstack-python35-jobs
       - openstack-python36-jobs
+      - openstack-python37-jobs
       - publish-openstack-docs-pti
       - release-notes-jobs-python3
     check:
@@ -302,7 +488,13 @@
               - ^playbooks/
               - ^roles/
               - ^.zuul.yaml$
-        - nova-multiattach:
+        - devstack-tempest-ipv6:
+            voting: false
+            files:
+              - ^playbooks/
+              - ^roles/
+              - ^.zuul.yaml$
+        - tempest-full-parallel:
             # Define list of irrelevant files to use everywhere else
             irrelevant-files: &tempest-irrelevant-files
               - ^(test-|)requirements.txt$
@@ -313,9 +505,11 @@
               - ^setup.cfg$
               - ^tempest/hacking/.*$
               - ^tempest/tests/.*$
-        - tempest-full-parallel:
+              - ^tools/.*$
+        - tempest-full-py3:
             irrelevant-files: *tempest-irrelevant-files
-        - tempest-full-py36:
+        - tempest-full-py3-ipv6:
+            voting: false
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full-rocky:
             irrelevant-files: *tempest-irrelevant-files
@@ -329,10 +523,22 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-multinode-full:
             irrelevant-files: *tempest-irrelevant-files
-        - tempest-tox-plugin-sanity-check
+        - tempest-multinode-full-py3:
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-tox-plugin-sanity-check:
+            irrelevant-files:
+              - ^(test-|)requirements.txt$
+              - ^.*\.rst$
+              - ^doc/.*$
+              - ^etc/.*$
+              - ^releasenotes/.*$
+              - ^setup.cfg$
+              - ^tempest/hacking/.*$
+              - ^tempest/tests/.*$
+              # tools/ is not here since this relies on a script in tools/.
         - tempest-slow:
             irrelevant-files: *tempest-irrelevant-files
-        - nova-cells-v1:
+        - tempest-slow-py3:
             irrelevant-files: *tempest-irrelevant-files
         - nova-live-migration:
             voting: false
@@ -340,6 +546,8 @@
         - neutron-grenade-multinode:
             irrelevant-files: *tempest-irrelevant-files
         - neutron-grenade:
+            irrelevant-files: *tempest-irrelevant-files
+        - grenade-py3:
             irrelevant-files: *tempest-irrelevant-files
         - devstack-plugin-ceph-tempest:
             voting: false
@@ -362,49 +570,47 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full:
             irrelevant-files: *tempest-irrelevant-files
+        - interop-tempest-consistency:
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-test-account-py3:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-test-account-no-admin-py3:
+            voting: false
+            irrelevant-files: *tempest-irrelevant-files
     gate:
       jobs:
-        - nova-multiattach:
-            irrelevant-files: *tempest-irrelevant-files
-        - tempest-slow:
+        - tempest-slow-py3:
             irrelevant-files: *tempest-irrelevant-files
         - neutron-grenade-multinode:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-full:
+        - tempest-full:
             irrelevant-files: *tempest-irrelevant-files
         - neutron-grenade:
+            irrelevant-files: *tempest-irrelevant-files
+        - grenade-py3:
             irrelevant-files: *tempest-irrelevant-files
     experimental:
       jobs:
         - tempest-cinder-v2-api:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-periodic-tempest-dsvm-all-master:
-            irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-multinode-full:
+        - tempest-all:
             irrelevant-files: *tempest-irrelevant-files
         - legacy-tempest-dsvm-neutron-dvr-multinode-full:
             irrelevant-files: *tempest-irrelevant-files
         - neutron-tempest-dvr-ha-multinode-full:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-full-test-accounts:
-            irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-full-test-accounts:
-            irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-identity-v3-test-accounts:
-            irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-full-non-admin:
+        - nova-cells-v1:
             irrelevant-files: *tempest-irrelevant-files
         - legacy-tempest-dsvm-nova-v20-api:
             irrelevant-files: *tempest-irrelevant-files
         - legacy-tempest-dsvm-lvm-multibackend:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-cinder-v1:
-            irrelevant-files: *tempest-irrelevant-files
         - devstack-plugin-ceph-tempest-py3:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-pg-full:
+        - tempest-pg-full:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-full-opensuse-423:
+        - tempest-full-py3-opensuse150:
             irrelevant-files: *tempest-irrelevant-files
     periodic-stable:
       jobs:
@@ -416,7 +622,5 @@
         - legacy-periodic-tempest-dsvm-neutron-full-ocata
     periodic:
       jobs:
-        - legacy-periodic-tempest-dsvm-full-test-accounts-master
-        - legacy-periodic-tempest-dsvm-neutron-full-test-accounts-master
-        - legacy-periodic-tempest-dsvm-neutron-full-non-admin-master
-        - legacy-periodic-tempest-dsvm-all-master
+        - tempest-all
+        - tempest-full-oslo-master
