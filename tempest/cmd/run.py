@@ -103,6 +103,9 @@ from tempest.cmd import workspace
 from tempest.common import credentials_factory as credentials
 from tempest import config
 
+if six.PY2:
+    # Python 2 has not FileNotFoundError exception
+    FileNotFoundError = IOError
 
 CONF = config.CONF
 SAVED_STATE_JSON = "saved_state.json"
@@ -112,7 +115,12 @@ class TempestRun(command.Command):
 
     def _set_env(self, config_file=None):
         if config_file:
-            CONF.set_config_path(os.path.abspath(config_file))
+            if os.path.exists(os.path.abspath(config_file)):
+                CONF.set_config_path(os.path.abspath(config_file))
+            else:
+                raise FileNotFoundError(
+                    "Config file: %s doesn't exist" % config_file)
+
         # NOTE(mtreinish): This is needed so that stestr doesn't gobble up any
         # stacktraces on failure.
         if 'TESTR_PDB' in os.environ:
@@ -202,8 +210,8 @@ class TempestRun(command.Command):
             svc.run()
 
         with open(SAVED_STATE_JSON, 'w+') as f:
-            f.write(json.dumps(data,
-                    sort_keys=True, indent=2, separators=(',', ': ')))
+            f.write(json.dumps(data, sort_keys=True,
+                               indent=2, separators=(',', ': ')))
 
     def get_parser(self, prog_name):
         parser = super(TempestRun, self).get_parser(prog_name)
@@ -252,6 +260,7 @@ class TempestRun(command.Command):
                             default=False)
         # execution args
         parser.add_argument('--concurrency', '-w',
+                            type=int, default=0,
                             help="The number of workers to use, defaults to "
                                  "the number of cpus")
         parallel = parser.add_mutually_exclusive_group()

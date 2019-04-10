@@ -194,12 +194,8 @@
         c-bak: false
 
 - job:
-    name: tempest-multinode-full
+    name: tempest-multinode-full-base
     parent: devstack-tempest
-    nodeset: openstack-two-node-bionic
-    # Until the devstack changes are backported, only run this on master
-    branches:
-      - master
     description: |
       Base multinode integration test with Neutron networking and py27.
       Former names for this job were:
@@ -225,36 +221,36 @@
           USE_BLOCK_MIGRATION_FOR_LIVE_MIGRATION: true
 
 - job:
+    name: tempest-multinode-full
+    parent: tempest-multinode-full-base
+    nodeset: openstack-two-node-bionic
+    # This job runs on Bionic from stable/stein on.
+    branches: ^(?!stable/(ocata|pike|queens|rocky)).*$
+
+- job:
+    name: tempest-multinode-full
+    parent: tempest-multinode-full-base
+    nodeset: openstack-two-node-xenial
+    # This job runs on Xenial and this is for stable/pike, stable/queens
+    # and stable/rocky. This job is prepared to make sure all stable branches
+    # before stable/stein will keep running on xenial. This job can be
+    # removed once stable/rocky is EOL.
+    branches:
+      - stable/pike
+      - stable/queens
+      - stable/rocky
+
+- job:
     name: tempest-multinode-full-py3
     parent: tempest-multinode-full
     vars:
       devstack_localrc:
         USE_PYTHON3: true
 
-- nodeset:
-    name: openstack-bionic-node
-    nodes:
-      - name: controller
-        label: ubuntu-bionic
-    groups:
-      - name: tempest
-        nodes:
-          - controller
-
-- nodeset:
-    name: openstack-opensuse150-node
-    nodes:
-      - name: controller
-        label: opensuse-150
-    groups:
-      - name: tempest
-        nodes:
-          - controller
-
 - job:
     name: tempest-full-py3-opensuse150
     parent: tempest-full-py3
-    nodeset: openstack-opensuse150-node
+    nodeset: devstack-single-node-opensuse-150
     description: |
       Base integration test with Neutron networking and py36 running
       on openSUSE Leap 15.0
@@ -263,8 +259,6 @@
 - job:
     name: tempest-slow
     parent: tempest-multinode-full
-    branches:
-      - master
     description: |
       This multinode integration job will run all the tests tagged as slow.
       It enables the lvm multibackend setup to cover few scenario tests.
@@ -280,6 +274,13 @@
         CINDER_ENABLED_BACKENDS: lvm:lvmdriver-1,lvm:lvmdriver-2
         ENABLE_VOLUME_MULTIATTACH: true
       tempest_concurrency: 2
+    group-vars:
+      # NOTE(mriedem): The ENABLE_VOLUME_MULTIATTACH variable is used on both
+      # the controller and subnode prior to Rocky so we have to make sure the
+      # variable is set in both locations.
+      subnode:
+        devstack_localrc:
+          ENABLE_VOLUME_MULTIATTACH: true
 
 - job:
     name: tempest-slow-py3
@@ -294,6 +295,16 @@
         s-proxy: false
         # without Swift, c-bak cannot run (in the Gate at least)
         c-bak: false
+
+- job:
+    name: tempest-full-stein
+    parent: tempest-full
+    override-checkout: stable/stein
+
+- job:
+    name: tempest-full-stein-py3
+    parent: tempest-full-py3
+    override-checkout: stable/stein
 
 - job:
     name: tempest-full-rocky
@@ -330,7 +341,7 @@
     parent: tox
     description: |
       Run tempest plugin sanity check script using tox.
-    nodeset: ubuntu-xenial
+    nodeset: ubuntu-bionic
     vars:
       tox_envlist: plugin-sanity-check
     voting: false
@@ -405,10 +416,12 @@
       - git.openstack.org/openstack/sahara-tests
       - git.openstack.org/openstack/senlin
       - git.openstack.org/openstack/senlin-tempest-plugin
+      - git.openstack.org/openstack/solum-tempest-plugin
       - git.openstack.org/openstack/tap-as-a-service
       - git.openstack.org/openstack/telemetry-tempest-plugin
       - git.openstack.org/openstack/tempest-horizon
       - git.openstack.org/openstack/tobiko
+      - git.openstack.org/openstack/trio2o
       - git.openstack.org/openstack/tripleo-common-tempest-plugin
       - git.openstack.org/openstack/trove-tempest-plugin
       - git.openstack.org/openstack/valet
@@ -497,7 +510,6 @@
         - tempest-full-parallel:
             # Define list of irrelevant files to use everywhere else
             irrelevant-files: &tempest-irrelevant-files
-              - ^(test-|)requirements.txt$
               - ^.*\.rst$
               - ^doc/.*$
               - ^etc/.*$
@@ -510,6 +522,10 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full-py3-ipv6:
             voting: false
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-stein:
+            irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-stein-py3:
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full-rocky:
             irrelevant-files: *tempest-irrelevant-files
@@ -527,7 +543,6 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-tox-plugin-sanity-check:
             irrelevant-files:
-              - ^(test-|)requirements.txt$
               - ^.*\.rst$
               - ^doc/.*$
               - ^etc/.*$
@@ -566,8 +581,6 @@
             irrelevant-files: *tempest-irrelevant-files
         - neutron-tempest-dvr:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-neutron-full-ocata:
-            irrelevant-files: *tempest-irrelevant-files
         - tempest-full:
             irrelevant-files: *tempest-irrelevant-files
         - interop-tempest-consistency:
@@ -602,7 +615,7 @@
             irrelevant-files: *tempest-irrelevant-files
         - nova-cells-v1:
             irrelevant-files: *tempest-irrelevant-files
-        - legacy-tempest-dsvm-nova-v20-api:
+        - nova-tempest-v2-api:
             irrelevant-files: *tempest-irrelevant-files
         - legacy-tempest-dsvm-lvm-multibackend:
             irrelevant-files: *tempest-irrelevant-files
@@ -614,6 +627,8 @@
             irrelevant-files: *tempest-irrelevant-files
     periodic-stable:
       jobs:
+        - tempest-full-stein
+        - tempest-full-stein-py3
         - tempest-full-rocky
         - tempest-full-rocky-py3
         - tempest-full-queens

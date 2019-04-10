@@ -1100,6 +1100,18 @@ specify .* as the regex.
 """)
 ]
 
+
+profiler_group = cfg.OptGroup(name="profiler",
+                              title="OpenStack Profiler")
+
+ProfilerGroup = [
+    cfg.StrOpt('key',
+               help="The secret key to enable OpenStack Profiler. The value "
+                    "should match the one configured in OpenStack services "
+                    "under `[profiler]/hmac_keys` property. The default empty "
+                    "value keeps profiling disabled"),
+]
+
 DefaultGroup = [
     cfg.BoolOpt('pause_teardown',
                 default=False,
@@ -1132,6 +1144,7 @@ _opts = [
     (service_available_group, ServiceAvailableGroup),
     (debug_group, DebugGroup),
     (placement_group, PlacementGroup),
+    (profiler_group, ProfilerGroup),
     (None, DefaultGroup)
 ]
 
@@ -1249,7 +1262,7 @@ class TempestConfigPrivate(object):
 
         logging_cfg_path = "%s/logging.conf" % os.path.dirname(path)
         if ((not hasattr(_CONF, 'log_config_append') or
-            _CONF.log_config_append is None) and
+             _CONF.log_config_append is None) and
             os.path.isfile(logging_cfg_path)):
             # if logging conf is in place we need to set log_config_append
             _CONF.log_config_append = logging_cfg_path

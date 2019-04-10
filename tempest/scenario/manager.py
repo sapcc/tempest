@@ -125,6 +125,27 @@ class ScenarioTest(tempest.test.BaseTestCase):
         returns a test server. The purpose of this wrapper is to minimize
         the impact on the code of the tests already using this
         function.
+
+        :param **kwargs:
+            See extra parameters below
+
+        :Keyword Arguments:
+            * *vnic_type* (``string``) --
+              used when launching instances with pre-configured ports.
+              Examples:
+                normal: a traditional virtual port that is either attached
+                        to a linux bridge or an openvswitch bridge on a
+                        compute node.
+                direct: an SR-IOV port that is directly attached to a VM
+                macvtap: an SR-IOV port that is attached to a VM via a macvtap
+                         device.
+              Defaults to ``CONF.network.port_vnic_type``.
+            * *port_profile* (``dict``) --
+              This attribute is a dictionary that can be used (with admin
+              credentials) to supply information influencing the binding of
+              the port.
+              example: port_profile = "capabilities:[switchdev]"
+              Defaults to ``CONF.network.port_profile``.
         """
 
         # NOTE(jlanoux): As a first step, ssh checks in the scenario
@@ -143,8 +164,8 @@ class ScenarioTest(tempest.test.BaseTestCase):
         if name is None:
             name = data_utils.rand_name(self.__class__.__name__ + "-server")
 
-        vnic_type = CONF.network.port_vnic_type
-        profile = CONF.network.port_profile
+        vnic_type = kwargs.pop('vnic_type', CONF.network.port_vnic_type)
+        profile = kwargs.pop('port_profile', CONF.network.port_profile)
 
         # If vnic_type or profile are configured create port for
         # every network
@@ -166,7 +187,7 @@ class ScenarioTest(tempest.test.BaseTestCase):
                         clients.security_groups_client.list_security_groups(
                         ).get('security_groups')
                     sec_dict = dict([(s['name'], s['id'])
-                                    for s in security_groups])
+                                     for s in security_groups])
 
                     sec_groups_names = [s['name'] for s in kwargs.pop(
                         'security_groups')]
