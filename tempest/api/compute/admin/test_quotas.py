@@ -26,7 +26,8 @@ LOG = logging.getLogger(__name__)
 
 
 class QuotasAdminTestBase(base.BaseV2ComputeAdminTest):
-    force_tenant_isolation = True
+    # set to false as we don't want new project creation in ccloud
+    force_tenant_isolation = False
 
     def setUp(self):
         # NOTE(mriedem): Avoid conflicts with os-quota-class-sets tests.

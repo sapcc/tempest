@@ -23,7 +23,8 @@ CONF = config.CONF
 
 
 class QuotasAdminNegativeTestBase(base.BaseV2ComputeAdminTest):
-    force_tenant_isolation = True
+    # set to false as we don't want new project creation in ccloud
+    force_tenant_isolation = False
 
     @classmethod
     def setup_clients(cls):
