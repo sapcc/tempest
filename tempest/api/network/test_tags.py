@@ -62,7 +62,9 @@ class TagsTest(base.BaseNetworkTest):
         # Validate that listing tags on a network resource works.
         retrieved_tags = self.tags_client.list_tags(
             'networks', self.network['id'])['tags']
-        self.assertEqual([tag_name], retrieved_tags)
+        # Filter out aci tenant id tag introduced by driver
+        filtered = [i for i in retrieved_tags if not i.startswith("monsoon3::aci::tenant")]
+        self.assertEqual([tag_name], filtered)
 
         # Generate 3 new tag names.
         replace_tags = [data_utils.rand_name(
