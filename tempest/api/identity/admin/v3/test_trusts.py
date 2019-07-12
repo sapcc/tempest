@@ -271,7 +271,9 @@ class TrustsV3TestJSON(base.BaseIdentityV3AdminTest):
         # any filter if scoped to a project, so we must ensure token scope is
         # project for this test.
         original_scope = self.os_admin.auth_provider.scope
-        set_scope(self.os_admin.auth_provider, 'project')
+        # ccloud: cloud-admin is a tempest domain-scoped token
+        # set_scope(self.os_admin.auth_provider, 'project')
+        set_scope(self.os_admin.auth_provider, 'domain')
         self.addCleanup(set_scope, self.os_admin.auth_provider, original_scope)
         trusts_get = self.trusts_client.list_trusts()['trusts']
         trusts = [t for t in trusts_get

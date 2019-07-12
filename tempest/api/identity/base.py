@@ -192,6 +192,7 @@ class BaseIdentityV3Test(BaseIdentityTest):
             cls.os_primary.identity_versions_v3_client
         cls.non_admin_app_creds_client = \
             cls.os_primary.application_credentials_client
+        cls.non_admin_creds_client = cls.os_primary.credentials_client
 
 
 class BaseIdentityV3AdminTest(BaseIdentityV3Test):
