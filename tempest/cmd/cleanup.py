@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-#
 # Copyright 2014 Dell Inc.
 # Licensed under the Apache License, Version 2.0 (the "License"); you may
 # not use this file except in compliance with the License. You may obtain
@@ -72,6 +70,15 @@ Runtime Arguments
     deleted unless the ``--delete-tempest-conf-objects`` flag is used to
     force their deletion.
 
+.. note::
+
+    If during execution of ``tempest cleanup`` NotImplemented exception
+    occurres, ``tempest cleanup`` won't fail on that, it will be logged only.
+    NotImplemented errors are ignored because they are an outcome of some
+    extensions being disabled and ``tempest cleanup`` is not checking their
+    availability as it tries to clean up as much as possible without any
+    complicated logic.
+
 """
 import sys
 import traceback
@@ -85,6 +92,7 @@ from tempest.cmd import cleanup_service
 from tempest.common import credentials_factory as credentials
 from tempest.common import identity
 from tempest import config
+from tempest.lib import exceptions
 
 SAVED_STATE_JSON = "saved_state.json"
 DRY_RUN_JSON = "dry_run.json"
@@ -93,6 +101,8 @@ CONF = config.CONF
 
 
 class TempestCleanup(command.Command):
+
+    GOT_EXCEPTIONS = []
 
     def take_action(self, parsed_args):
         try:
@@ -103,6 +113,14 @@ class TempestCleanup(command.Command):
             LOG.exception("Failure during cleanup")
             traceback.print_exc()
             raise
+        # ignore NotImplemented errors as those are an outcome of some
+        # extensions being disabled and cleanup is not checking their
+        # availability as it tries to clean up as much as possible without
+        # any complicated logic
+        critical_exceptions = [ex for ex in self.GOT_EXCEPTIONS if
+                               not isinstance(ex, exceptions.NotImplemented)]
+        if critical_exceptions:
+            raise Exception(self.GOT_EXCEPTIONS)
 
     def init(self, parsed_args):
         cleanup_service.init_conf()
@@ -159,7 +177,8 @@ class TempestCleanup(command.Command):
                   'is_dry_run': is_dry_run,
                   'saved_state_json': self.json_data,
                   'is_preserve': is_preserve,
-                  'is_save_state': is_save_state}
+                  'is_save_state': is_save_state,
+                  'got_exceptions': self.GOT_EXCEPTIONS}
         for service in self.global_services:
             svc = service(admin_mgr, **kwargs)
             svc.run()
@@ -200,7 +219,8 @@ class TempestCleanup(command.Command):
                   'saved_state_json': self.json_data,
                   'is_preserve': is_preserve,
                   'is_save_state': False,
-                  'project_id': project_id}
+                  'project_id': project_id,
+                  'got_exceptions': self.GOT_EXCEPTIONS}
         for service in self.project_services:
             svc = service(mgr, **kwargs)
             svc.run()
@@ -300,7 +320,8 @@ class TempestCleanup(command.Command):
                   'is_dry_run': False,
                   'saved_state_json': data,
                   'is_preserve': False,
-                  'is_save_state': True}
+                  'is_save_state': True,
+                  'got_exceptions': self.GOT_EXCEPTIONS}
         for service in self.global_services:
             svc = service(admin_mgr, **kwargs)
             svc.run()

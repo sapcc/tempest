@@ -200,7 +200,8 @@ class TestNetworkAdvancedServerOps(manager.NetworkScenarioTest):
             self.assertEqual(resize_flavor, server['flavor']['id'])
         else:
             flavor = self.flavors_client.show_flavor(resize_flavor)['flavor']
-            for key in ['original_name', 'ram', 'vcpus', 'disk']:
+            self.assertEqual(flavor['name'], server['original_name'])
+            for key in ['ram', 'vcpus', 'disk']:
                 self.assertEqual(flavor[key], server['flavor'][key])
         self._wait_server_status_and_check_network_connectivity(
             server, keypair, floating_ip)
@@ -257,7 +258,7 @@ class TestNetworkAdvancedServerOps(manager.NetworkScenarioTest):
         self._wait_server_status_and_check_network_connectivity(
             server, keypair, floating_ip)
 
-    @decorators.skip_because(bug='1788403')
+    @decorators.skip_because(bug='1836595')
     @decorators.idempotent_id('25b188d7-0183-4b1e-a11d-15840c8e2fd6')
     @testtools.skipUnless(CONF.compute_feature_enabled.cold_migration,
                           'Cold migration is not available.')

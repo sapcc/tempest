@@ -69,10 +69,7 @@ AuthGroup = [
     cfg.StrOpt('default_credentials_domain_name',
                default='Default',
                help="Default domain used when getting v3 credentials. "
-                    "This is the name keystone uses for v2 compatibility.",
-               deprecated_opts=[cfg.DeprecatedOpt(
-                                'tenant_isolation_domain_name',
-                                group='auth')]),
+                    "This is the name keystone uses for v2 compatibility."),
     cfg.BoolOpt('create_isolated_networks',
                 default=True,
                 help="If use_dynamic_credentials is set to True and Neutron "
@@ -84,27 +81,20 @@ AuthGroup = [
     cfg.StrOpt('admin_username',
                help="Username for an administrative user. This is needed for "
                     "authenticating requests made by project isolation to "
-                    "create users and projects",
-               deprecated_group='identity'),
+                    "create users and projects"),
     cfg.StrOpt('admin_project_name',
                help="Project name to use for an administrative user. This is "
                     "needed for authenticating requests made by project "
-                    "isolation to create users and projects",
-               deprecated_opts=[cfg.DeprecatedOpt('admin_tenant_name',
-                                                  group='auth'),
-                                cfg.DeprecatedOpt('admin_tenant_name',
-                                                  group='identity')]),
+                    "isolation to create users and projects"),
     cfg.StrOpt('admin_password',
                help="Password to use for an administrative user. This is "
                     "needed for authenticating requests made by project "
                     "isolation to create users and projects",
-               secret=True,
-               deprecated_group='identity'),
+               secret=True),
     cfg.StrOpt('admin_domain_name',
                default='Default',
                help="Admin domain name for authentication (Keystone V3). "
-                    "The same domain applies to user and project",
-               deprecated_group='identity'),
+                    "The same domain applies to user and project"),
 ]
 
 identity_group = cfg.OptGroup(name='identity',
@@ -146,9 +136,7 @@ IdentityGroup = [
                choices=['public', 'admin', 'internal',
                         'publicURL', 'adminURL', 'internalURL'],
                help="The public endpoint type to use for OpenStack Identity "
-                    "(Keystone) API v2",
-               deprecated_opts=[cfg.DeprecatedOpt('endpoint_type',
-                                                  group='identity')]),
+                    "(Keystone) API v2"),
     cfg.StrOpt('v3_endpoint_type',
                default='adminURL',
                choices=['public', 'admin', 'internal',
@@ -283,6 +271,17 @@ ComputeGroup = [
                help="Valid secondary image reference to be used in tests. "
                     "This is a required option, but if only one image is "
                     "available duplicate the value of image_ref above"),
+    cfg.StrOpt('certified_image_ref',
+               help="Valid image reference to be used in image certificate "
+                    "validation tests when enabled. This image must also "
+                    "have the required img_signature_* properties set. "
+                    "Additional details available within the following Nova "
+                    "documentation: https://docs.openstack.org/nova/latest/"
+                    "user/certificate-validation.html"),
+    cfg.ListOpt('certified_image_trusted_certs',
+                help="A list of trusted certificates to be used when the "
+                     "image certificate validation compute feature is "
+                     "enabled."),
     cfg.StrOpt('flavor_ref',
                default="1",
                help="Valid primary flavor to use in tests."),
@@ -364,6 +363,19 @@ ComputeGroup = [
                     "If both values are not specified, Tempest avoids tests "
                     "which require a microversion. Valid values are string "
                     "with format 'X.Y' or string 'latest'"),
+    cfg.StrOpt('compute_volume_common_az',
+               default=None,
+               help='AZ to be used for Cinder and Nova. Set this parameter '
+                    'when the cloud has nova.conf: cinder.cross_az_attach '
+                    'set to false. Which means volumes attached to an '
+                    'instance must be in the same availability zone in Cinder '
+                    'as the instance availability zone in Nova. Set the '
+                    'common availability zone in this config which will be '
+                    'used to boot an instance as well as creating a volume. '
+                    'NOTE: If that AZ is not in Cinder (or '
+                    'allow_availability_zone_fallback=False in cinder.conf), '
+                    'the volume create request will fail and the instance '
+                    'will fail the build request.'),
 ]
 
 placement_group = cfg.OptGroup(name='placement',
@@ -471,7 +483,12 @@ ComputeFeaturesGroup = [
     cfg.StrOpt('vnc_server_header',
                default='WebSockify',
                help='Expected VNC server name (WebSockify, nginx, etc) '
-                    'in response header.'),
+                    'in response header.',
+               deprecated_for_removal=True,
+               deprecated_reason='This option will be ignored because the '
+                                 'usage of different response header fields '
+                                 'to accomplish the same goal (in accordance '
+                                 'with RFC7231 S6.2.2) makes it obsolete.'),
     cfg.BoolOpt('spice_console',
                 default=False,
                 help='Enable Spice console. This configuration value should '
@@ -523,9 +540,8 @@ ComputeFeaturesGroup = [
                 default=True,
                 help='Enable special configuration drive with metadata.'),
     cfg.ListOpt('scheduler_enabled_filters',
-                default=["RetryFilter", "AvailabilityZoneFilter",
-                         "ComputeFilter", "ComputeCapabilitiesFilter",
-                         "ImagePropertiesFilter",
+                default=["AvailabilityZoneFilter", "ComputeFilter",
+                         "ComputeCapabilitiesFilter", "ImagePropertiesFilter",
                          "ServerGroupAntiAffinityFilter",
                          "ServerGroupAffinityFilter"],
                 help="A list of enabled filters that Nova will accept as "
@@ -685,7 +701,10 @@ NetworkGroup = [
     cfg.ListOpt('dns_servers',
                 default=["8.8.8.8", "8.8.4.4"],
                 help="List of dns servers which should be used"
-                     " for subnet creation"),
+                     " for subnet creation",
+                deprecated_for_removal=True,
+                deprecated_reason="This config option is no longer "
+                                  "used anywhere, so it can be removed."),
     cfg.StrOpt('port_vnic_type',
                choices=[None, 'normal', 'direct', 'macvtap'],
                help="vnic_type to use when launching instances"
@@ -735,7 +754,13 @@ NetworkFeaturesGroup = [
                 help="Does the test environment support port security?"),
     cfg.BoolOpt('floating_ips',
                 default=True,
-                help='Does the test environment support floating_ips')
+                help='Does the test environment support floating_ips'),
+    cfg.StrOpt('qos_placement_physnet', default=None,
+               help='Name of the physnet for placement based minimum '
+                    'bandwidth allocation.'),
+    cfg.StrOpt('provider_net_base_segmentation_id', default=3000,
+               help='Base segmentation ID to create provider networks. '
+                    'This value will be increased in case of conflict.')
 ]
 
 validation_group = cfg.OptGroup(name='validation',
@@ -786,7 +811,7 @@ ValidationGroup = [
                default="password",
                help="Password used to authenticate to an instance."),
     cfg.StrOpt('ssh_shell_prologue',
-               default="set -eu -o pipefail; PATH=$$PATH:/sbin;",
+               default="set -eu -o pipefail; PATH=$$PATH:/sbin:/usr/sbin;",
                help="Shell fragments to use before executing a command "
                     "when sshing to a guest."),
     cfg.IntOpt('ping_size',
@@ -1049,7 +1074,12 @@ ScenarioGroup = [
                choices=["udhcpc", "dhclient", ""],
                help='DHCP client used by images to renew DCHP lease. '
                     'If left empty, update operation will be skipped. '
-                    'Supported clients: "udhcpc", "dhclient"')
+                    'Supported clients: "udhcpc", "dhclient"'),
+    cfg.StrOpt('protocol',
+               default='icmp',
+               choices=('icmp', 'tcp', 'udp'),
+               help='The protocol used in security groups tests to check '
+                    'connectivity.'),
 ]
 
 

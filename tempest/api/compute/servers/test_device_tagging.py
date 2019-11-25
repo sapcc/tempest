@@ -175,11 +175,13 @@ class TaggedBootDevicesTest(DeviceTaggingBase):
         # Create ports
         self.port1 = self.ports_client.create_port(
             network_id=net1['id'],
+            name=data_utils.rand_name(self.__class__.__name__),
             fixed_ips=[{'subnet_id': subnet1['id']}])['port']
         self.addCleanup(self.ports_client.delete_port, self.port1['id'])
 
         self.port2 = self.ports_client.create_port(
             network_id=net1['id'],
+            name=data_utils.rand_name(self.__class__.__name__),
             fixed_ips=[{'subnet_id': subnet1['id']}])['port']
         self.addCleanup(self.ports_client.delete_port, self.port2['id'])
 
@@ -358,6 +360,10 @@ class TaggedAttachmentsTest(DeviceTaggingBase):
             name=data_utils.rand_name('device-tagging-server'),
             networks=[{'uuid': self.get_tenant_network()['id']}])
         self.addCleanup(self.delete_server, server['id'])
+
+        # NOTE(mgoddard): Get detailed server to ensure addresses are present
+        # in fixed IP case.
+        server = self.servers_client.show_server(server['id'])['server']
 
         # Attach tagged nic and volume
         interface = self.interfaces_client.create_interface(

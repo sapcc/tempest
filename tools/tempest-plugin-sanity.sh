@@ -43,58 +43,27 @@ set -ex
 
 # retrieve a list of projects having tempest plugins
 PROJECT_LIST="$(python tools/generate-tempest-plugins-list.py)"
-# List of projects having tempest plugin stale or unmaintained for a long time
-# (6 months or more)
-# TODO(masayukig): Some of these can be removed from BLACKLIST in the future.
-# airship-tempest-plugin: https://review.openstack.org/#/c/634387/
-# barbican-tempest-plugin: https://review.openstack.org/#/c/634631/
-# intel-nfv-ci-tests: https://review.openstack.org/#/c/634640/
-# networking-ansible: https://review.openstack.org/#/c/634647/
-# networking-generic-switch: https://review.openstack.org/#/c/634846/
-# networking-l2gw-tempest-plugin: https://review.openstack.org/#/c/635093/
-# networking-midonet: https://review.openstack.org/#/c/635096/
-# networking-plumgrid: https://review.openstack.org/#/c/635096/
-# networking-spp: https://review.openstack.org/#/c/635098/
-# neutron-dynamic-routing: https://review.openstack.org/#/c/637718/
-# neutron-vpnaas: https://review.openstack.org/#/c/637719/
-# nova-lxd: https://review.openstack.org/#/c/638334/
-# valet: https://review.openstack.org/#/c/638339/
-# vitrage-tempest-plugin: https://review.openstack.org/#/c/639003/
-BLACKLIST="
-airship-tempest-plugin
-barbican-tempest-plugin
-intel-nfv-ci-tests
-networking-ansible
-networking-generic-switch
-networking-l2gw-tempest-plugin
-networking-midonet
-networking-plumgrid
-networking-spp
-neutron-dynamic-routing
-neutron-vpnaas
-nova-lxd
-valet
-vitrage-tempest-plugin
-"
+
+BLACKLIST="$(python tools/generate-tempest-plugins-list.py blacklist)"
 
 # Function to clone project using zuul-cloner or from git
-function clone_project() {
+function clone_project {
     if [ -e /usr/zuul-env/bin/zuul-cloner ]; then
         /usr/zuul-env/bin/zuul-cloner --cache-dir /opt/git \
-        git://git.openstack.org \
-        openstack/"$1"
+        https://opendev.org \
+        "$1"
 
     elif [ -e /usr/bin/git ]; then
-        /usr/bin/git clone git://git.openstack.org/openstack/"$1" \
-        openstack/"$1"
+        /usr/bin/git clone https://opendev.org/"$1" \
+        "$1"
 
     fi
 }
 
 # function to create virtualenv to perform sanity operation
-function prepare_workspace() {
+function prepare_workspace {
     SANITY_DIR=$(pwd)
-    virtualenv --clear "$SANITY_DIR"/.venv
+    virtualenv -p python3 --clear "$SANITY_DIR"/.venv
     export TVENV="$SANITY_DIR/tools/with_venv.sh"
     cd "$SANITY_DIR"
 
@@ -103,16 +72,16 @@ function prepare_workspace() {
 }
 
 # Function to install project
-function install_project() {
-    "$TVENV" pip install "$SANITY_DIR"/openstack/"$1"
+function install_project {
+    "$TVENV" pip install "$SANITY_DIR"/"$1"
     # Check for test-requirements.txt file in a project then install it.
-    if [ -e "$SANITY_DIR"/openstack/"$1"/test-requirements.txt ]; then
-        "$TVENV" pip install -r "$SANITY_DIR"/openstack/"$1"/test-requirements.txt
+    if [ -e "$SANITY_DIR"/"$1"/test-requirements.txt ]; then
+        "$TVENV" pip install -r "$SANITY_DIR"/"$1"/test-requirements.txt
     fi
 }
 
 # Function to perform sanity checking on Tempest plugin
-function tempest_sanity() {
+function tempest_sanity {
     "$TVENV" tempest init "$SANITY_DIR"/tempest_sanity && \
     cd "$SANITY_DIR"/tempest_sanity && \
     "$TVENV" tempest list-plugins && \
@@ -125,13 +94,13 @@ function tempest_sanity() {
     # Remove the sanity workspace in case of remaining
     rm -fr "$SANITY_DIR"/tempest_sanity
     # Remove the project directory after sanity run
-    rm -fr "$SANITY_DIR"/openstack/"$1"
+    rm -fr "$SANITY_DIR"/"$1"
 
     return $retval
 }
 
 # Function to run sanity check on each project
-function plugin_sanity_check() {
+function plugin_sanity_check {
     prepare_workspace && \
     clone_project "$1" && \
     install_project "$1" && \
@@ -152,8 +121,10 @@ for project in $PROJECT_LIST; do
     fi
 done
 
+echo "Passed Plugins: $passed_plugin"
+echo "Failed Plugins: $failed_plugin"
+
 # Check for failed status
 if [[ -n $failed_plugin ]]; then
-    echo "Failed Plugins: $failed_plugin"
     exit 1
 fi

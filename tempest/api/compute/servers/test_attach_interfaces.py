@@ -15,6 +15,7 @@
 
 import time
 
+from oslo_log import log
 import six
 
 from tempest.api.compute import base
@@ -23,12 +24,15 @@ from tempest.common import utils
 from tempest.common.utils import net_utils
 from tempest.common import waiters
 from tempest import config
+from tempest.lib.common.utils import data_utils
 from tempest.lib.common.utils.linux import remote_client
 from tempest.lib.common.utils import test_utils
 from tempest.lib import decorators
 from tempest.lib import exceptions as lib_exc
 
 CONF = config.CONF
+
+LOG = log.getLogger(__name__)
 
 
 class AttachInterfacesTestBase(base.BaseV2ComputeTest):
@@ -75,6 +79,9 @@ class AttachInterfacesTestBase(base.BaseV2ComputeTest):
             validatable=True,
             validation_resources=validation_resources,
             wait_until='ACTIVE')
+        # NOTE(mgoddard): Get detailed server to ensure addresses are present
+        # in fixed IP case.
+        server = self.servers_client.show_server(server['id'])['server']
         # NOTE(artom) self.create_test_server adds cleanups, but this is
         # apparently not enough? Add cleanup here.
         self.addCleanup(self.delete_server, server['id'])
@@ -147,7 +154,9 @@ class AttachInterfacesTestJSON(AttachInterfacesTestBase):
 
     def _test_create_interface_by_port_id(self, server, ifs):
         network_id = ifs[0]['net_id']
-        port = self.ports_client.create_port(network_id=network_id)
+        port = self.ports_client.create_port(
+            network_id=network_id,
+            name=data_utils.rand_name(self.__class__.__name__))
         port_id = port['port']['id']
         self.addCleanup(self.ports_client.delete_port, port_id)
         iface = self.interfaces_client.create_interface(
@@ -288,7 +297,9 @@ class AttachInterfacesTestJSON(AttachInterfacesTestBase):
         """
         network = self.get_tenant_network()
         network_id = network['id']
-        port = self.ports_client.create_port(network_id=network_id)
+        port = self.ports_client.create_port(
+            network_id=network_id,
+            name=data_utils.rand_name(self.__class__.__name__))
         port_id = port['port']['id']
         self.addCleanup(self.ports_client.delete_port, port_id)
 
@@ -311,6 +322,9 @@ class AttachInterfacesTestJSON(AttachInterfacesTestBase):
             self.addCleanup(self.delete_server, server['id'])
 
         for server in servers:
+            # NOTE(mgoddard): Get detailed server to ensure addresses are
+            # present in fixed IP case.
+            server = self.servers_client.show_server(server['id'])['server']
             self._wait_for_validation(server, validation_resources)
             # attach the port to the server
             iface = self.interfaces_client.create_interface(
@@ -331,6 +345,16 @@ class AttachInterfacesUnderV243Test(AttachInterfacesTestBase):
     @decorators.idempotent_id('c7e0e60b-ee45-43d0-abeb-8596fd42a2f9')
     @utils.services('network')
     def test_add_remove_fixed_ip(self):
+        # NOTE(zhufl) By default only project that is admin or network owner
+        # or project with role advsvc is authorised to add interfaces with
+        # fixed-ip, so if we don't create network for each project, do not
+        # test
+        if not (CONF.auth.use_dynamic_credentials and
+                CONF.auth.create_isolated_networks and
+                not CONF.network.shared_physical_network):
+            raise self.skipException("Only owner network supports "
+                                     "creating interface by fixed ip.")
+
         # Add and Remove the fixed IP to server.
         server, ifs = self._create_server_get_interfaces()
         original_interface_count = len(ifs)  # This is the number of ports.
@@ -354,10 +378,34 @@ class AttachInterfacesUnderV243Test(AttachInterfacesTestBase):
         self.servers_client.add_fixed_ip(server['id'], networkId=network_id)
         # Wait for the ips count to increase by one.
 
+        def _get_server_floating_ips():
+            _floating_ips = []
+            _server = self.os_primary.servers_client.show_server(
+                server['id'])['server']
+            for _ip_set in _server['addresses']:
+                for _ip in _server['addresses'][_ip_set]:
+                    if _ip['OS-EXT-IPS:type'] == 'floating':
+                        _floating_ips.append(_ip['addr'])
+            return _floating_ips
+
         def _wait_for_ip_increase():
             _addresses = self.os_primary.servers_client.list_addresses(
                 server['id'])['addresses']
-            return len(list(_addresses.values())[0]) == original_ip_count + 1
+            _ips = [addr['addr'] for addr in list(_addresses.values())[0]]
+            LOG.debug("Wait for IP increase. All IPs still associated to "
+                      "the server %(id)s: %(ips)s",
+                      {'id': server['id'], 'ips': _ips})
+            if len(_ips) == original_ip_count + 1:
+                return True
+            elif len(_ips) == original_ip_count:
+                return False
+            # If not, lets remove any floating IP from the list and check again
+            _fips = _get_server_floating_ips()
+            _ips = [_ip for _ip in _ips if _ip not in _fips]
+            LOG.debug("Wait for IP increase. Fixed IPs still associated to "
+                      "the server %(id)s: %(ips)s",
+                      {'id': server['id'], 'ips': _ips})
+            return len(_ips) == original_ip_count + 1
 
         if not test_utils.call_until_true(
                 _wait_for_ip_increase, CONF.compute.build_timeout,
@@ -384,7 +432,19 @@ class AttachInterfacesUnderV243Test(AttachInterfacesTestBase):
         def _wait_for_ip_decrease():
             _addresses = self.os_primary.servers_client.list_addresses(
                 server['id'])['addresses']
-            return len(list(_addresses.values())[0]) == original_ip_count
+            _ips = [addr['addr'] for addr in list(_addresses.values())[0]]
+            LOG.debug("Wait for IP decrease. All IPs still associated to "
+                      "the server %(id)s: %(ips)s",
+                      {'id': server['id'], 'ips': _ips})
+            if len(_ips) == original_ip_count:
+                return True
+            # If not, lets remove any floating IP from the list and check again
+            _fips = _get_server_floating_ips()
+            _ips = [_ip for _ip in _ips if _ip not in _fips]
+            LOG.debug("Wait for IP decrease. Fixed IPs still associated to "
+                      "the server %(id)s: %(ips)s",
+                      {'id': server['id'], 'ips': _ips})
+            return len(_ips) == original_ip_count
 
         if not test_utils.call_until_true(
                 _wait_for_ip_decrease, CONF.compute.build_timeout,

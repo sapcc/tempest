@@ -17,11 +17,11 @@ import time
 
 from oslo_log import log as logging
 
-from tempest.api.compute import api_microversion_fixture
 from tempest.common import compute
 from tempest.common import waiters
 from tempest import config
 from tempest import exceptions
+from tempest.lib.common import api_microversion_fixture
 from tempest.lib.common import api_version_request
 from tempest.lib.common import api_version_utils
 from tempest.lib.common.utils import data_utils
@@ -470,7 +470,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
     def setUp(self):
         super(BaseV2ComputeTest, self).setUp()
         self.useFixture(api_microversion_fixture.APIMicroversionFixture(
-            self.request_microversion))
+            compute_microversion=self.request_microversion))
 
     @classmethod
     def create_volume(cls, image_ref=None, **kwargs):
@@ -487,6 +487,9 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
             kwargs['display_name'] = vol_name
         if image_ref is not None:
             kwargs['imageRef'] = image_ref
+        if CONF.compute.compute_volume_common_az:
+            kwargs.setdefault('availability_zone',
+                              CONF.compute.compute_volume_common_az)
         volume = cls.volumes_client.create_volume(**kwargs)['volume']
         cls.addClassResourceCleanup(
             cls.volumes_client.wait_for_resource_deletion, volume['id'])
