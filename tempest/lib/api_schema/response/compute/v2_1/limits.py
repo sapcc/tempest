@@ -94,10 +94,15 @@ get_limit = {
                             },
                             'additionalProperties': False,
                         }
+                    },
+                    'absolutePerFlavor': {
+                        'type': 'object',
+                        'properties': {},
+                        'additionalProperties': True
                     }
                 },
                 'additionalProperties': False,
-                'required': ['absolute', 'rate']
+                'required': ['absolute', 'rate', 'absolutePerFlavor']
             }
         },
         'additionalProperties': False,
