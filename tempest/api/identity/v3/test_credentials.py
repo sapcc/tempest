@@ -60,27 +60,28 @@ class CredentialsTestJSON(base.BaseIdentityV3Test):
         for value2 in self.creds_list[1]:
             self.assertIn(value2, cred['blob'])
 
-        new_keys = [data_utils.rand_name('NewAccess'),
-                    data_utils.rand_name('NewSecret')]
-        blob = '{"access": "%s", "secret": "%s"}' % (new_keys[0], new_keys[1])
-        update_body = self.non_admin_creds_client.update_credential(
-            cred['id'], user_id=self.user_body['id'], blob=blob, project_id=self.projects[0],
-            type='ec2')['credential']
-        update_body['blob'] = json.loads(update_body['blob'])
-        self.assertEqual(cred['id'], update_body['id'])
-        self.assertEqual(self.projects[0], update_body['project_id'])
-        self.assertEqual(self.user_body['id'], update_body['user_id'])
-        self.assertEqual(update_body['blob']['access'], new_keys[0])
-        self.assertEqual(update_body['blob']['secret'], new_keys[1])
-
-        get_body = self.non_admin_creds_client.show_credential(cred['id'])['credential']
-        get_body['blob'] = json.loads(get_body['blob'])
-        for value1 in self.creds_list[0]:
-            self.assertEqual(update_body[value1],
-                             get_body[value1])
-        for value2 in self.creds_list[1]:
-            self.assertEqual(update_body['blob'][value2],
-                             get_body['blob'][value2])
+        # ccloud: identity:update_credential is forbidden
+        # new_keys = [data_utils.rand_name('NewAccess'),
+        #             data_utils.rand_name('NewSecret')]
+        # blob = '{"access": "%s", "secret": "%s"}' % (new_keys[0], new_keys[1])
+        # update_body = self.non_admin_creds_client.update_credential(
+        #     cred['id'], user_id=self.user_body['id'], blob=blob, project_id=self.projects[0],
+        #     type='ec2')['credential']
+        # update_body['blob'] = json.loads(update_body['blob'])
+        # self.assertEqual(cred['id'], update_body['id'])
+        # self.assertEqual(self.projects[0], update_body['project_id'])
+        # self.assertEqual(self.user_body['id'], update_body['user_id'])
+        # self.assertEqual(update_body['blob']['access'], new_keys[0])
+        # self.assertEqual(update_body['blob']['secret'], new_keys[1])
+        #
+        # get_body = self.non_admin_creds_client.show_credential(cred['id'])['credential']
+        # get_body['blob'] = json.loads(get_body['blob'])
+        # for value1 in self.creds_list[0]:
+        #     self.assertEqual(update_body[value1],
+        #                      get_body[value1])
+        # for value2 in self.creds_list[1]:
+        #     self.assertEqual(update_body['blob'][value2],
+        #                      get_body['blob'][value2])
 
     @decorators.idempotent_id('13202c00-0021-42a1-88d4-81b44d448aab')
     def test_credentials_list_delete(self):
