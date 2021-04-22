@@ -88,6 +88,14 @@ class BaseNetworkTest(tempest.test.BaseTestCase):
     @classmethod
     def resource_setup(cls):
         super(BaseNetworkTest, cls).resource_setup()
+        """Sensible default quota"""
+        new_quotas = {'network': 10, 'subnet': 10, 'port': 50, 'router': 5, 'floatingip': 5,
+                      'security_group': 10, 'security_group_rule': 50}
+        if hasattr(cls, 'quotas_client'):
+            cls.quotas_client.update_quotas(cls.quotas_client.project_id, **new_quotas)
+        if hasattr(cls, 'admin_quotas_client'):
+            cls.admin_quotas_client.update_quotas(cls.admin_quotas_client.project_id, **new_quotas)
+
         cls.ethertype = "IPv" + str(cls._ip_version)
         if cls._ip_version == 4:
             cls.cidr = netaddr.IPNetwork(CONF.network.project_network_cidr)
