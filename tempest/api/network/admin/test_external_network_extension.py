@@ -66,6 +66,16 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
     def test_list_external_networks(self):
         # Create external_net
         external_network = self._create_network()
+        # CCloud: we have to share external network for the user before
+        body = self.admin_networks_client.create_rbac_policy(
+            object_type='network',
+            object_id=external_network['id'],
+            action='access_as_shared',
+            target_tenant=self.networks_client.tenant_id,
+        )
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+            self.admin_networks_client.delete_rbac_policy,
+            body['rbac_policy']['id'])
         # List networks as a normal user and confirm the external
         # network extension attribute is returned for those networks
         # that were created as external
@@ -83,6 +93,16 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
     def test_show_external_networks_attribute(self):
         # Create external_net
         external_network = self._create_network()
+        # CCloud: we have to share external network for the user before
+        body = self.admin_networks_client.create_rbac_policy(
+            object_type='network',
+            object_id=external_network['id'],
+            action='access_as_shared',
+            target_tenant=self.networks_client.tenant_id,
+        )
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+            self.admin_networks_client.delete_rbac_policy,
+            body['rbac_policy']['id'])
         # Show an external network as a normal user and confirm the
         # external network extension attribute is returned.
         body = self.networks_client.show_network(external_network['id'])
@@ -103,7 +123,6 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
     def test_delete_external_networks_with_floating_ip(self):
         # Verifies external network can be deleted while still holding
         # (unassociated) floating IPs
-
         body = self.admin_networks_client.create_network(
             **{'router:external': True})
         external_network = body['network']
@@ -121,15 +140,17 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
                         created_floating_ip['id'])
         if utils.is_extension_enabled('filter-validation', 'network'):
             floatingip_list = self.admin_floating_ips_client.list_floatingips(
-                floating_network_id=external_network['id'])
+                floating_network_id=external_network['id'],
+                tenant_id=self.admin_floating_ips_client.tenant_id)
         else:
             # NOTE(hongbin): This is for testing the backward-compatibility
             # of neutron API although the parameter is a wrong filter
             # for listing floating IPs.
             floatingip_list = self.admin_floating_ips_client.list_floatingips(
-                invalid_filter=external_network['id'])
-        self.assertIn(created_floating_ip['id'],
-                      (f['id'] for f in floatingip_list['floatingips']))
+                invalid_filter=external_network['id'],
+                tenant_id=self.admin_floating_ips_client.tenant_id)
+        ips= [f['id'] for f in floatingip_list['floatingips']]
+        self.assertIn(created_floating_ip['id'], ips)
         self.admin_networks_client.delete_network(external_network['id'])
         # Verifies floating ip is deleted
         floatingip_list = self.admin_floating_ips_client.list_floatingips()

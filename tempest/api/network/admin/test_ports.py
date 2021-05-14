@@ -75,7 +75,8 @@ class PortsAdminExtendedAttrsTestJSON(base.BaseAdminNetworkTest):
     def test_list_ports_binding_ext_attr(self):
         # Create a new port
         post_body = {"network_id": self.network['id'],
-                     "name": data_utils.rand_name(self.__class__.__name__)}
+                     "name": data_utils.rand_name(self.__class__.__name__),
+                     "tenant_id": self.admin_ports_client.tenant_id}
         body = self.admin_ports_client.create_port(**post_body)
         port = body['port']
         self.addCleanup(
@@ -89,7 +90,8 @@ class PortsAdminExtendedAttrsTestJSON(base.BaseAdminNetworkTest):
 
         # List all ports, ensure new port is part of list and its binding
         # attributes are set and accurate
-        body = self.admin_ports_client.list_ports()
+        list_body = {"tenant_id": self.admin_ports_client.tenant_id}
+        body = self.admin_ports_client.list_ports(**list_body)
         ports_list = body['ports']
         pids_list = [p['id'] for p in ports_list]
         self.assertIn(port['id'], pids_list)

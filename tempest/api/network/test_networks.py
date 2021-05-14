@@ -28,7 +28,7 @@ from tempest.lib import exceptions as lib_exc
 CONF = config.CONF
 
 
-class BaseNetworkTestResources(base.BaseNetworkTest):
+class BaseNetworkTestResources(base.BaseAdminNetworkTest):
 
     @classmethod
     def resource_setup(cls):
@@ -360,6 +360,19 @@ class NetworksTest(BaseNetworkTestResources):
                           'The public_network_id option must be specified.')
     def test_external_network_visibility(self):
         public_network_id = CONF.network.public_network_id
+
+        # CCloud: we have to share external network for the user before
+        # we should ignore conflict errors here because this RBAC rule can be
+        # already created
+        try:
+            self.admin_networks_client.create_rbac_policy(
+                object_type='network',
+                object_id=public_network_id,
+                action='access_as_shared',
+                target_tenant=self.networks_client.tenant_id,
+            )
+        except lib_exc.Conflict:
+            pass
 
         # find external network matching public_network_id
         body = self.networks_client.list_networks(**{'router:external': True})

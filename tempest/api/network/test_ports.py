@@ -148,6 +148,7 @@ class PortsTestJSON(sec_base.BaseSecGroupTest):
                         custom_matchers.MatchesDictExceptForKeys
                         (port, excluded_keys=['extra_dhcp_opts',
                                               'created_at',
+                                              'network:tenant_id',
                                               'updated_at']))
 
     @decorators.idempotent_id('45fcdaf2-dab0-4c13-ac6c-fcddfb579dbd')

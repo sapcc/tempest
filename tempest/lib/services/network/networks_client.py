@@ -74,3 +74,18 @@ class NetworksClient(base.BaseNetworkClient):
     def list_dhcp_agents_on_hosting_network(self, network_id):
         uri = '/networks/%s/dhcp-agents' % network_id
         return self.list_resources(uri)
+
+    def create_rbac_policy(self, **kwargs):
+        """Creates a RBAC policy for network.
+
+        For a full list of available parameters, please refer to the official
+        API reference:
+        https://docs.openstack.org/api-ref/network/v2/index.html#rbac-policies
+        """
+        uri = '/rbac-policies'
+        post_data = {'rbac_policy': kwargs}
+        return self.create_resource(uri, post_data)
+
+    def delete_rbac_policy(self, rbac_policy_id):
+        uri = '/rbac-policies/%s' % rbac_policy_id
+        return self.delete_resource(uri)

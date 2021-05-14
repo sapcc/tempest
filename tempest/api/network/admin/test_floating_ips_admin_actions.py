@@ -71,8 +71,9 @@ class FloatingIPAdminTestJSON(base.BaseAdminNetworkTest):
             self.alt_floating_ips_client.delete_floatingip,
             floating_ip_alt['id'])
         # List floating ips from admin
-        body = self.admin_floating_ips_client.list_floatingips()
-        floating_ip_ids_admin = [f['id'] for f in body['floatingips']]
+        floating_ip_ids_admin = self._list_floatingips_from_tenants(
+            [self.floating_ip['tenant_id'], floating_ip_alt['tenant_id'],
+             floating_ip_admin['floatingip']['tenant_id']])
         # Check that admin sees all floating ips
         self.assertIn(self.floating_ip['id'], floating_ip_ids_admin)
         self.assertIn(floating_ip_admin['floatingip']['id'],
@@ -87,6 +88,15 @@ class FloatingIPAdminTestJSON(base.BaseAdminNetworkTest):
         self.assertNotIn(floating_ip_admin['floatingip']['id'],
                          floating_ip_ids)
         self.assertNotIn(floating_ip_alt['id'], floating_ip_ids)
+
+    def _list_floatingips_from_tenants(self, tenants):
+        floating_ip_ids = []
+        for tenant in tenants:
+            body = self.admin_floating_ips_client.list_floatingips(
+                tenant_id=tenant)
+            for f in body['floatingips']:
+                floating_ip_ids.append(f['id'])
+        return floating_ip_ids
 
     @decorators.idempotent_id('32727cc3-abe2-4485-a16e-48f2d54c14f2')
     def test_create_list_show_floating_ip_with_tenant_id_by_admin(self):
@@ -122,6 +132,7 @@ class FloatingIPAdminTestJSON(base.BaseAdminNetworkTest):
                          created_floating_ip['floating_ip_address'])
         self.assertEqual(shown_floating_ip['port_id'], self.port['id'])
         # Verify the floating ip exists in the list of all floating_ips
-        floating_ips = self.admin_floating_ips_client.list_floatingips()
+        floating_ips = self.admin_floating_ips_client.list_floatingips(
+            tenant_id=created_floating_ip['tenant_id'])
         floatingip_id_list = [f['id'] for f in floating_ips['floatingips']]
         self.assertIn(created_floating_ip['id'], floatingip_id_list)
