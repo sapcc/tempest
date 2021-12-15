@@ -94,6 +94,7 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
         self.accounts_dir = accounts_lock_dir
         self._creds = {}
 
+
     @classmethod
     def _append_role(cls, role, account_hash, hash_dict):
         if role in hash_dict['roles']:
@@ -180,6 +181,7 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
                         'Unknown resource type %s, ignoring this field',
                         resource
                     )
+        LOG.debug('The resulting hash_dict is %s', hash_dict)
         return hash_dict
 
     def is_multi_user(self):
@@ -191,13 +193,17 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
     def _create_hash_file(self, hash_string):
         path = os.path.join(self.accounts_dir, hash_string)
         if not os.path.isfile(path):
+            LOG.info(f"Hash file dir {path}")
             with open(path, 'w') as fd:
                 fd.write(self.name)
+                LOG.info(f"Hash file created {path}")
+            LOG.info(f"Ready to exit with true")
             return True
+        LOG.info(f"Hash file exist {path}")
         return False
 
     @lockutils.synchronized('test_accounts_io', external=True)
-    def _get_free_hash(self, hashes):
+    def _get_free_hash(self, hashes, roles):
         # Cast as a list because in some edge cases a set will be passed in
         hashes = list(hashes)
         if not os.path.isdir(self.accounts_dir):
@@ -214,8 +220,8 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
                 path = os.path.join(self.accounts_dir, _hash)
                 with open(path, 'r') as fd:
                     names.append(fd.read())
-        msg = ('Insufficient number of users provided. %s have allocated all '
-               'the credentials for this allocation request' % ','.join(names))
+        msg = (f'Insufficient number of users provided. {",".join(names)} have allocated all '
+               f'the credentials for this allocation request. Roles {roles}. Hashes {hashes}')
         raise lib_exc.InvalidCredentials(msg)
 
     def _get_match_hash_list(self, roles=None, scope=None):
@@ -267,9 +273,9 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
     def _get_creds(self, roles=None, scope=None):
         useable_hashes = self._get_match_hash_list(roles, scope)
         if not useable_hashes:
-            msg = 'No users configured for type/roles %s' % roles
+            msg = f'No users configured for type/roles {roles} {scope} {self.hash_dict}'
             raise lib_exc.InvalidCredentials(msg)
-        free_hash = self._get_free_hash(useable_hashes)
+        free_hash = self._get_free_hash(useable_hashes, roles)
         clean_creds = self._sanitize_creds(
             self.hash_dict['creds'][free_hash])
         LOG.info('%s allocated creds:\n%s', self.name, clean_creds)
@@ -282,6 +288,7 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
             LOG.warning('Expected an account lock file %s to remove, but '
                         'one did not exist', hash_path)
         else:
+            LOG.debug('Removing an Account hash file: %s', hash_path)
             os.remove(hash_path)
             if not os.listdir(self.accounts_dir):
                 os.rmdir(self.accounts_dir)
@@ -441,6 +448,7 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
         # Make sure a domain scope if defined for users in case of V3
         # Make sure a tenant is available in case of V2
         creds_dict = self._extend_credentials(creds_dict)
+        LOG.debug('Wrapping creds with network, creds_dict is %s', creds_dict)
         # This just builds a Credentials object, it does not validate
         # nor fill  with missing fields.
         credential = auth.get_credentials(
@@ -451,12 +459,15 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
                                              identity_uri=self.identity_uri)
         networks_client = net_clients.network.NetworksClient()
         net_name = self.hash_dict['networks'].get(hash, None)
+        LOG.debug('The net_name is %s', net_name)
         try:
             network = fixed_network.get_network_from_name(
                 net_name, networks_client)
+            LOG.debug('The network is %s', network)
         except lib_exc.InvalidTestResource:
             network = {}
         net_creds.set_resources(network=network)
+        LOG.debug('The net_creds are %s', net_creds)
         return net_creds
 
     def _extend_credentials(self, creds_dict):

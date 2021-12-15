@@ -19,8 +19,10 @@ from tempest.lib import auth
 from tempest.lib.common import dynamic_creds
 from tempest.lib.common import preprov_creds
 from tempest.lib import exceptions
+from oslo_log import log as logging
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 """This module provides factories of credential and credential providers
@@ -176,6 +178,7 @@ def is_admin_available(identity_version):
             get_configured_admin_credentials(fill_in=False,
                                              identity_version=identity_version)
         except exceptions.InvalidConfiguration:
+            LOG.info("Invalid configuration")
             is_admin = False
     return is_admin
 

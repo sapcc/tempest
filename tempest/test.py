@@ -299,8 +299,9 @@ class BaseTestCase(testtools.testcase.WithAttributes,
                 getattr(cls, 'force_tenant_isolation', False)):
             if not credentials.is_admin_available(
                     identity_version=identity_version):
-                raise cls.skipException(
-                    "Missing Identity Admin API credentials in configuration.")
+                pass
+                # raise cls.skipException(
+                #     f"Missing Identity Admin API credentials in configuration. {cls.credentials}")
         if 'alt' in cls.credentials and not credentials.is_alt_available(
                 identity_version=identity_version):
             msg = "Missing a 2nd set of API credentials in configuration."
@@ -692,8 +693,8 @@ class BaseTestCase(testtools.testcase.WithAttributes,
                     skip_msg = (
                         "%s skipped because the configured credential provider"
                         " is not able to provide credentials with the %s role "
-                        "assigned." % (cls.__name__, role))
-                    raise cls.skipException(skip_msg)
+                        "assigned. All requested roles are: %s")
+                    raise cls.skipException(skip_msg % (cls, role, roles))
             params = dict(roles=roles, scope=scope)
             if force_new is not None:
                 params.update(force_new=force_new)
