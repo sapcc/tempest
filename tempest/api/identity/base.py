@@ -206,7 +206,7 @@ class BaseIdentityV3AdminTest(BaseIdentityV3Test):
     # admin credentials are not available.
     # Since All admin tests require admin credentials to be
     # executed, so this will not impact the ability to execute tests.
-    force_tenant_isolation = True
+    force_tenant_isolation = False
 
     @classmethod
     def setup_clients(cls):
