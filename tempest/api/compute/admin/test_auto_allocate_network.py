@@ -37,7 +37,7 @@ class AutoAllocateNetworkTest(base.BaseV2ComputeTest):
     calls to Neutron to automatically allocate the network topology.
     """
 
-    force_tenant_isolation = True
+    force_tenant_isolation = False
 
     min_microversion = '2.37'
     max_microversion = 'latest'
