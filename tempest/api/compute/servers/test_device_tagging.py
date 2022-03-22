@@ -212,7 +212,7 @@ class TaggedBootDevicesTest(DeviceTaggingBase):
 
         server = self.create_test_server(
             validatable=True,
-            wait_until='ACTIVE',
+            wait_until='SSHABLE',
             validation_resources=validation_resources,
             config_drive=config_drive_enabled,
             name=data_utils.rand_name('device-tagging-server'),
@@ -335,7 +335,9 @@ class TaggedAttachmentsTest(DeviceTaggingBase):
     def verify_device_metadata(self, md_json):
         try:
             md_dict = json.loads(md_json)
-        except (json_decoder.JSONDecodeError, TypeError):
+        except (json_decoder.JSONDecodeError, TypeError) as e:
+            LOG.warning(
+                'Failed to decode json metadata: %s, %s', str(e), str(md_json))
             return False
 
         found_devices = [d['tags'][0] for d in md_dict['devices']
@@ -345,7 +347,9 @@ class TaggedAttachmentsTest(DeviceTaggingBase):
                 sorted(found_devices),
                 sorted(['nic-tag', 'volume-tag']))
             return True
-        except Exception:
+        except Exception as e:
+            LOG.warning(
+                'Failed to parse metadata: %s, %s', str(e), str(md_json))
             return False
 
     def verify_empty_devices(self, md_json):

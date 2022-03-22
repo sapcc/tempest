@@ -43,6 +43,17 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         super(ServerActionsTestJSON, self).setUp()
         # Check if the server is in a clean state after test
         try:
+            validation_resources = self.get_class_validation_resources(
+                self.os_primary)
+            # _test_rebuild_server test compares ip address attached to the
+            # server before and after the rebuild, in order to avoid
+            # a situation when a newly created server doesn't have a floating
+            # ip attached at the beginning of the test_rebuild_server let's
+            # make sure right here the floating ip is attached
+            waiters.wait_for_server_floating_ip(
+                self.client,
+                self.client.show_server(self.server_id)['server'],
+                validation_resources['floating_ip'])
             waiters.wait_for_server_status(self.client,
                                            self.server_id, 'ACTIVE')
         except lib_exc.NotFound:
@@ -781,3 +792,28 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         self.assertEqual('novnc', body['type'])
         self.assertNotEqual('', body['url'])
         self._validate_url(body['url'])
+
+
+class ServersAaction247Test(base.BaseV2ComputeTest):
+    """Test compute server with microversion greater than 2.47
+
+    # NOTE(gmann): This test tests the Server create backup APIs
+    # response schema for 2.47 microversion. No specific assert
+    # or behaviour verification is needed.
+    """
+
+    min_microversion = '2.47'
+
+    @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
+                          'Snapshotting not available, backup not possible.')
+    @utils.services('image')
+    @decorators.idempotent_id('252a4bdd-6366-4dae-9994-8c30aa660f23')
+    def test_create_backup(self):
+        server = self.create_test_server(wait_until='ACTIVE')
+
+        backup1 = data_utils.rand_name('backup-1')
+        # Just check create_back to verify the schema with 2.47
+        self.servers_client.create_backup(server['id'],
+                                          backup_type='daily',
+                                          rotation=2,
+                                          name=backup1)

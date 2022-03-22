@@ -131,6 +131,8 @@
 - job:
     name: tempest-integrated-compute-centos-8-stream
     parent: tempest-integrated-compute
+    # TODO(gmann): Make this job non voting until bug#1957941 if fixed.
+    voting: false
     nodeset: devstack-single-node-centos-8-stream
     branches: ^(?!stable/(ocata|pike|queens|rocky|stein|train|ussuri|victoria)).*$
     description: |
@@ -296,6 +298,22 @@
         TEMPEST_VOLUME_TYPE: volumev2
 
 - job:
+    name: tempest-centos8-stream-fips
+    parent: devstack-tempest
+    description: |
+      Integration testing for a FIPS enabled Centos 8 system
+    nodeset: devstack-single-node-centos-8-stream
+    pre-run: playbooks/enable-fips.yaml
+    vars:
+      tox_envlist: full
+      configure_swap_size: 4096
+      devstack_local_conf:
+        test-config:
+          "$TEMPEST_CONFIG":
+            validation:
+              ssh_key_type: 'ecdsa'
+
+- job:
     name: tempest-pg-full
     parent: tempest-full-py3
     description: |
@@ -317,6 +335,8 @@
     check:
       jobs:
         - grenade
+        - grenade-skip-level:
+            voting: false
         - tempest-integrated-networking
         - openstacksdk-functional-devstack
     gate:
@@ -334,6 +354,8 @@
       run on Nova gate only.
     check:
       jobs:
+        - grenade-skip-level:
+            voting: false
         - tempest-integrated-compute
         - tempest-integrated-compute-centos-8-stream
         - openstacksdk-functional-devstack
@@ -353,6 +375,8 @@
     check:
       jobs:
         - grenade
+        - grenade-skip-level:
+            voting: false
         - tempest-integrated-placement
         - openstacksdk-functional-devstack
     gate:
@@ -371,6 +395,8 @@
     check:
       jobs:
         - grenade
+        - grenade-skip-level:
+            voting: false
         - tempest-integrated-storage
         - openstacksdk-functional-devstack
     gate:

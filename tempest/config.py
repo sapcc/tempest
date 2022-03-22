@@ -653,6 +653,9 @@ ComputeFeaturesGroup = [
                 default=True,
                 help='Does the test environment support attaching devices '
                      'using an IDE bus to the instance?'),
+    cfg.BoolOpt('unified_limits',
+                default=False,
+                help='Does the test environment support unified limits?'),
 ]
 
 
@@ -875,7 +878,10 @@ NetworkFeaturesGroup = [
                     'bandwidth allocation.'),
     cfg.StrOpt('provider_net_base_segmentation_id', default=3000,
                help='Base segmentation ID to create provider networks. '
-                    'This value will be increased in case of conflict.')
+                    'This value will be increased in case of conflict.'),
+    cfg.BoolOpt('qos_min_bw_and_pps', default=False,
+                help='Does the test environment have minimum bandwidth and '
+                     'packet rate inventories configured?'),
 ]
 
 dashboard_group = cfg.OptGroup(name="dashboard",
@@ -967,6 +973,10 @@ ValidationGroup = [
                default='public',
                help="Network used for SSH connections. Ignored if "
                     "connect_method=floating."),
+    cfg.StrOpt('ssh_key_type',
+               default='rsa',
+               help='Type of key to use for ssh connections. '
+                    'Valid types are rsa, ecdsa'),
 ]
 
 volume_group = cfg.OptGroup(name='volume',

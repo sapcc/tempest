@@ -10,6 +10,7 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import os
 import re
 import time
 
@@ -32,7 +33,8 @@ def _get_task_state(body):
 
 # NOTE(afazekas): This function needs to know a token and a subject.
 def wait_for_server_status(client, server_id, status, ready_wait=True,
-                           extra_timeout=0, raise_on_error=True):
+                           extra_timeout=0, raise_on_error=True,
+                           request_id=None):
     """Waits for a server to reach a given status."""
 
     # NOTE(afazekas): UNKNOWN status possible on ERROR
@@ -71,11 +73,12 @@ def wait_for_server_status(client, server_id, status, ready_wait=True,
                      '/'.join((server_status, str(task_state))),
                      time.time() - start_time)
         if (server_status == 'ERROR') and raise_on_error:
+            details = ''
             if 'fault' in body:
-                raise exceptions.BuildErrorException(body['fault'],
-                                                     server_id=server_id)
-            else:
-                raise exceptions.BuildErrorException(server_id=server_id)
+                details += 'Fault: %s.' % body['fault']
+            if request_id:
+                details += ' Server boot request ID: %s.' % request_id
+            raise exceptions.BuildErrorException(details, server_id=server_id)
 
         timed_out = int(time.time()) - start_time >= timeout
 
@@ -88,6 +91,8 @@ def wait_for_server_status(client, server_id, status, ready_wait=True,
                         'status': status,
                         'expected_task_state': expected_task_state,
                         'timeout': timeout})
+            if request_id:
+                message += ' Server boot request ID: %s.' % request_id
             message += ' Current status: %s.' % server_status
             message += ' Current task state: %s.' % task_state
             caller = test_utils.find_test_caller()
@@ -526,23 +531,6 @@ def wait_for_interface_detach(client, server_id, port_id, detach_request_id):
             raise lib_exc.TimeoutException(message)
 
 
-def wait_for_guest_os_boot(client, server_id):
-    start_time = int(time.time())
-    while True:
-        console_output = client.get_console_output(server_id)['output']
-        for line in console_output.split('\n'):
-            if 'login:' in line.lower():
-                return
-        if int(time.time()) - start_time >= client.build_timeout:
-            LOG.info("Guest OS on server %s probably isn't ready or its "
-                     "console log can't be parsed properly. If guest OS "
-                     "isn't ready, that may cause problems with SSH to "
-                     "the server.",
-                     server_id)
-            return
-        time.sleep(client.build_interval)
-
-
 def wait_for_server_floating_ip(servers_client, server, floating_ip,
                                 wait_for_disassociate=False):
     """Wait for floating IP association or disassociation.
@@ -583,3 +571,26 @@ def wait_for_server_floating_ip(servers_client, server, floating_ip,
                        'in time.' % (floating_ip, server['id']))
             raise lib_exc.TimeoutException(msg)
         time.sleep(servers_client.build_interval)
+
+
+def wait_for_ping(server_ip, timeout=30, interval=1):
+    """Waits for an address to become pingable"""
+    start_time = int(time.time())
+    while int(time.time()) - start_time < timeout:
+        response = os.system("ping -c 1 " + server_ip)
+        if response == 0:
+            return
+        time.sleep(interval)
+    raise lib_exc.TimeoutException()
+
+
+def wait_for_ssh(ssh_client, timeout=30):
+    """Waits for SSH connection to become usable"""
+    start_time = int(time.time())
+    while int(time.time()) - start_time < timeout:
+        try:
+            ssh_client.validate_authentication()
+            return
+        except lib_exc.SSHTimeout:
+            pass
+    raise lib_exc.TimeoutException()

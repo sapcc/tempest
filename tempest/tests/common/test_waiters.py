@@ -276,36 +276,6 @@ class TestInterfaceWaiters(base.TestCase):
         )
         sleep.assert_called_once_with(client.build_interval)
 
-    def test_wait_for_guest_os_boot(self):
-        get_console_output = mock.Mock(
-            side_effect=[
-                {'output': 'os not ready yet\n'},
-                {'output': 'login:\n'}
-            ])
-        client = self.mock_client(get_console_output=get_console_output)
-        self.patch('time.time', return_value=0.)
-        sleep = self.patch('time.sleep')
-
-        with mock.patch.object(waiters.LOG, "info") as log_info:
-            waiters.wait_for_guest_os_boot(client, 'server_id')
-
-        get_console_output.assert_has_calls([
-            mock.call('server_id'), mock.call('server_id')])
-        sleep.assert_called_once_with(client.build_interval)
-        log_info.assert_not_called()
-
-    def test_wait_for_guest_os_boot_timeout(self):
-        get_console_output = mock.Mock(
-            return_value={'output': 'os not ready yet\n'})
-        client = self.mock_client(get_console_output=get_console_output)
-        self.patch('time.time', side_effect=[0., client.build_timeout + 1.])
-        self.patch('time.sleep')
-
-        with mock.patch.object(waiters.LOG, "info") as log_info:
-            waiters.wait_for_guest_os_boot(client, 'server_id')
-
-        log_info.assert_called_once()
-
 
 class TestVolumeWaiters(base.TestCase):
     vol_migrating_src_host = {
@@ -552,6 +522,70 @@ class TestVolumeWaiters(base.TestCase):
         # Assert that list_volume_attachments was actually called
         mock_list_volume_attachments.assert_called_once_with(
             mock.sentinel.server_id)
+
+    @mock.patch('os.system')
+    def test_wait_for_ping_host_alive(self, mock_ping):
+        mock_ping.return_value = 0
+        # Assert that nothing is raised as the host is alive
+        waiters.wait_for_ping('127.0.0.1', 10, 1)
+
+    @mock.patch('os.system')
+    def test_wait_for_ping_host_eventually_alive(self, mock_ping):
+        mock_ping.side_effect = [1, 1, 0]
+        # Assert that nothing is raised when the host is eventually alive
+        waiters.wait_for_ping('127.0.0.1', 10, 1)
+
+    @mock.patch('os.system')
+    def test_wait_for_ping_timeout(self, mock_ping):
+        mock_ping.return_value = 1
+        # Assert that TimeoutException is raised when the host is dead
+        self.assertRaises(
+            lib_exc.TimeoutException,
+            waiters.wait_for_ping,
+            '127.0.0.1',
+            .1,
+            .1
+        )
+
+    def test_wait_for_ssh(self):
+        mock_ssh_client = mock.Mock()
+        mock_ssh_client.validate_authentication.return_value = True
+        # Assert that nothing is raised when validate_authentication returns
+        waiters.wait_for_ssh(mock_ssh_client, .1)
+        mock_ssh_client.validate_authentication.assert_called_once()
+
+    def test_wait_for_ssh_eventually_up(self):
+        mock_ssh_client = mock.Mock()
+        timeout = lib_exc.SSHTimeout(
+            host='foo',
+            username='bar',
+            password='fizz'
+        )
+        mock_ssh_client.validate_authentication.side_effect = [
+            timeout,
+            timeout,
+            True
+        ]
+        # Assert that nothing is raised if validate_authentication passes
+        # before the timeout
+        waiters.wait_for_ssh(mock_ssh_client, 10)
+
+    def test_wait_for_ssh_timeout(self):
+        mock_ssh_client = mock.Mock()
+        timeout = lib_exc.SSHTimeout(
+            host='foo',
+            username='bar',
+            password='fizz'
+        )
+        mock_ssh_client.validate_authentication.side_effect = timeout
+        # Assert that TimeoutException is raised when validate_authentication
+        # doesn't pass in time.
+        self.assertRaises(
+            lib_exc.TimeoutException,
+            waiters.wait_for_ssh,
+            mock_ssh_client,
+            .1
+        )
 
 
 class TestServerFloatingIPWaiters(base.TestCase):

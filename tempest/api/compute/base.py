@@ -21,7 +21,6 @@ from tempest.common import compute
 from tempest.common import waiters
 from tempest import config
 from tempest import exceptions
-from tempest.lib.common import api_microversion_fixture
 from tempest.lib.common import api_version_request
 from tempest.lib.common import api_version_utils
 from tempest.lib.common.utils import data_utils
@@ -164,6 +163,11 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
             api_version_utils.select_request_microversion(
                 cls.placement_min_microversion,
                 CONF.placement.min_microversion))
+        cls.setup_api_microversion_fixture(
+            compute_microversion=cls.request_microversion,
+            volume_microversion=cls.volume_request_microversion,
+            placement_microversion=cls.placement_request_microversion)
+
         cls.build_interval = CONF.compute.build_interval
         cls.build_timeout = CONF.compute.build_timeout
         cls.image_ref = CONF.compute.image_ref
@@ -302,10 +306,18 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
     def create_test_server_group(cls, name="", policy=None):
         if not name:
             name = data_utils.rand_name(cls.__name__ + "-Server-Group")
-        if policy is None:
-            policy = ['affinity']
+        if cls.is_requested_microversion_compatible('2.63'):
+            policy = policy or ['affinity']
+            if not isinstance(policy, list):
+                policy = [policy]
+            kwargs = {'policies': policy}
+        else:
+            policy = policy or 'affinity'
+            if isinstance(policy, list):
+                policy = policy[0]
+            kwargs = {'policy': policy}
         body = cls.server_groups_client.create_server_group(
-            name=name, policies=policy)['server_group']
+            name=name, **kwargs)['server_group']
         cls.addClassResourceCleanup(
             test_utils.call_and_ignore_notfound_exc,
             cls.server_groups_client.delete_server_group,
@@ -483,28 +495,8 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         :param validation_resources: The dict of validation resources
             provisioned for the server.
         """
-        if CONF.validation.connect_method == 'floating':
-            if validation_resources:
-                return validation_resources['floating_ip']['ip']
-            else:
-                msg = ('When validation.connect_method equals floating, '
-                       'validation_resources cannot be None')
-                raise lib_exc.InvalidParam(invalid_param=msg)
-        elif CONF.validation.connect_method == 'fixed':
-            addresses = server['addresses'][CONF.validation.network_for_ssh]
-            for address in addresses:
-                if address['version'] == CONF.validation.ip_version_for_ssh:
-                    return address['addr']
-            raise exceptions.ServerUnreachable(server_id=server['id'])
-        else:
-            raise lib_exc.InvalidConfiguration()
-
-    def setUp(self):
-        super(BaseV2ComputeTest, self).setUp()
-        self.useFixture(api_microversion_fixture.APIMicroversionFixture(
-            compute_microversion=self.request_microversion,
-            volume_microversion=self.volume_request_microversion,
-            placement_microversion=self.placement_request_microversion))
+        return compute.get_server_ip(
+            server, validation_resources=validation_resources)
 
     @classmethod
     def create_volume(cls, image_ref=None, **kwargs):

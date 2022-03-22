@@ -43,8 +43,6 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full-ussuri-py3:
             irrelevant-files: *tempest-irrelevant-files
-        - tempest-full-train-py3:
-            irrelevant-files: *tempest-irrelevant-files
         - tempest-multinode-full-py3:
             irrelevant-files: *tempest-irrelevant-files
         - tempest-tox-plugin-sanity-check:
@@ -124,6 +122,8 @@
             irrelevant-files: *tempest-irrelevant-files-2
         - tempest-full-py3-centos-8-stream:
             irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-centos-9-stream:
+            irrelevant-files: *tempest-irrelevant-files
     gate:
       jobs:
         - openstack-tox-pep8
@@ -145,6 +145,8 @@
             irrelevant-files: *tempest-irrelevant-files-3
         - devstack-plugin-ceph-tempest-py3:
             irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-centos-9-stream:
+            irrelevant-files: *tempest-irrelevant-files
     experimental:
       jobs:
         - tempest-with-latest-microversion
@@ -161,7 +163,7 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-pg-full:
             irrelevant-files: *tempest-irrelevant-files
-        - tempest-full-py3-opensuse15:
+        - tempest-centos8-stream-fips:
             irrelevant-files: *tempest-irrelevant-files
     periodic-stable:
       jobs:
@@ -169,7 +171,6 @@
         - tempest-full-wallaby-py3
         - tempest-full-victoria-py3
         - tempest-full-ussuri-py3
-        - tempest-full-train-py3
     periodic:
       jobs:
         - tempest-all

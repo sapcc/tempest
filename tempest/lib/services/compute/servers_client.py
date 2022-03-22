@@ -27,6 +27,7 @@ from tempest.lib.api_schema.response.compute.v2_16 import servers as schemav216
 from tempest.lib.api_schema.response.compute.v2_19 import servers as schemav219
 from tempest.lib.api_schema.response.compute.v2_26 import servers as schemav226
 from tempest.lib.api_schema.response.compute.v2_3 import servers as schemav23
+from tempest.lib.api_schema.response.compute.v2_45 import servers as schemav245
 from tempest.lib.api_schema.response.compute.v2_47 import servers as schemav247
 from tempest.lib.api_schema.response.compute.v2_48 import servers as schemav248
 from tempest.lib.api_schema.response.compute.v2_51 import servers as schemav251
@@ -39,6 +40,7 @@ from tempest.lib.api_schema.response.compute.v2_63 import servers as schemav263
 from tempest.lib.api_schema.response.compute.v2_70 import servers as schemav270
 from tempest.lib.api_schema.response.compute.v2_71 import servers as schemav271
 from tempest.lib.api_schema.response.compute.v2_73 import servers as schemav273
+from tempest.lib.api_schema.response.compute.v2_75 import servers as schemav275
 from tempest.lib.api_schema.response.compute.v2_79 import servers as schemav279
 from tempest.lib.api_schema.response.compute.v2_8 import servers as schemav28
 from tempest.lib.api_schema.response.compute.v2_9 import servers as schemav29
@@ -57,7 +59,8 @@ class ServersClient(base_compute_client.BaseComputeClient):
         {'min': '2.9', 'max': '2.15', 'schema': schemav29},
         {'min': '2.16', 'max': '2.18', 'schema': schemav216},
         {'min': '2.19', 'max': '2.25', 'schema': schemav219},
-        {'min': '2.26', 'max': '2.46', 'schema': schemav226},
+        {'min': '2.26', 'max': '2.44', 'schema': schemav226},
+        {'min': '2.45', 'max': '2.46', 'schema': schemav245},
         {'min': '2.47', 'max': '2.47', 'schema': schemav247},
         {'min': '2.48', 'max': '2.50', 'schema': schemav248},
         {'min': '2.51', 'max': '2.53', 'schema': schemav251},
@@ -68,7 +71,8 @@ class ServersClient(base_compute_client.BaseComputeClient):
         {'min': '2.63', 'max': '2.69', 'schema': schemav263},
         {'min': '2.70', 'max': '2.70', 'schema': schemav270},
         {'min': '2.71', 'max': '2.72', 'schema': schemav271},
-        {'min': '2.73', 'max': '2.78', 'schema': schemav273},
+        {'min': '2.73', 'max': '2.74', 'schema': schemav273},
+        {'min': '2.75', 'max': '2.78', 'schema': schemav275},
         {'min': '2.79', 'max': None, 'schema': schemav279}]
 
     def __init__(self, auth_provider, service, region,
@@ -235,7 +239,9 @@ class ServersClient(base_compute_client.BaseComputeClient):
         API reference:
         https://docs.openstack.org/api-ref/compute/#create-server-back-up-createbackup-action
         """
-        return self.action(server_id, "createBackup", **kwargs)
+        schema = self.get_schema(self.schema_versions_info)
+        return self.action(server_id, "createBackup",
+                           schema.create_backup, **kwargs)
 
     def change_password(self, server_id, **kwargs):
         """Change the root password for the server.

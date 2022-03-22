@@ -23,11 +23,14 @@ from urllib import parse as urlparse
 from oslo_log import log as logging
 from oslo_utils import excutils
 
+from tempest.common.utils.linux import remote_client
 from tempest.common import waiters
 from tempest import config
+from tempest import exceptions
 from tempest.lib.common import fixed_network
 from tempest.lib.common import rest_client
 from tempest.lib.common.utils import data_utils
+from tempest.lib import exceptions as lib_exc
 
 CONF = config.CONF
 
@@ -54,10 +57,104 @@ def is_scheduler_filter_enabled(filter_name):
     return False
 
 
+def get_server_ip(server, validation_resources=None):
+    """Get the server fixed or floating IP.
+
+    Based on the configuration we're in, return a correct ip
+    address for validating that a guest is up.
+
+    :param server: The server dict as returned by the API
+    :param validation_resources: The dict of validation resources
+        provisioned for the server.
+    """
+    if CONF.validation.connect_method == 'floating':
+        if validation_resources:
+            return validation_resources['floating_ip']['ip']
+        else:
+            msg = ('When validation.connect_method equals floating, '
+                   'validation_resources cannot be None')
+            raise lib_exc.InvalidParam(invalid_param=msg)
+    elif CONF.validation.connect_method == 'fixed':
+        addresses = server['addresses'][CONF.validation.network_for_ssh]
+        for address in addresses:
+            if address['version'] == CONF.validation.ip_version_for_ssh:
+                return address['addr']
+        raise exceptions.ServerUnreachable(server_id=server['id'])
+    else:
+        raise lib_exc.InvalidConfiguration()
+
+
+def _setup_validation_fip(
+        server, clients, tenant_network, validation_resources):
+    if CONF.service_available.neutron:
+        ifaces = clients.interfaces_client.list_interfaces(server['id'])
+        validation_port = None
+        for iface in ifaces['interfaceAttachments']:
+            if iface['net_id'] == tenant_network['id']:
+                validation_port = iface['port_id']
+                break
+        if not validation_port:
+            # NOTE(artom) This will get caught by the catch-all clause in
+            # the wait_until loop below
+            raise ValueError('Unable to setup floating IP for validation: '
+                             'port not found on tenant network')
+        clients.floating_ips_client.update_floatingip(
+            validation_resources['floating_ip']['id'],
+            port_id=validation_port)
+    else:
+        fip_client = clients.compute_floating_ips_client
+        fip_client.associate_floating_ip_to_server(
+            floating_ip=validation_resources['floating_ip']['ip'],
+            server_id=server['id'])
+
+
+def wait_for_ssh_or_ping(server, clients, tenant_network,
+                         validatable, validation_resources, wait_until,
+                         set_floatingip):
+    """Wait for the server for SSH or Ping as requested.
+
+    :param server: The server dict as returned by the API
+    :param clients: Client manager which provides OpenStack Tempest clients.
+    :param tenant_network: Tenant network to be used for creating a server.
+    :param validatable: Whether the server will be pingable or sshable.
+    :param validation_resources: Resources created for the connection to the
+        server. Include a keypair, a security group and an IP.
+    :param wait_until: Server status to wait for the server to reach.
+        It can be PINGABLE and SSHABLE states when the server is both
+        validatable and has the required validation_resources provided.
+    :param set_floatingip: If FIP needs to be associated to server
+    """
+    if set_floatingip and CONF.validation.connect_method == 'floating':
+        _setup_validation_fip(
+            server, clients, tenant_network, validation_resources)
+
+    server_ip = get_server_ip(
+        server, validation_resources=validation_resources)
+    if wait_until == 'PINGABLE':
+        waiters.wait_for_ping(
+            server_ip,
+            clients.servers_client.build_timeout,
+            clients.servers_client.build_interval
+        )
+    if wait_until == 'SSHABLE':
+        pkey = validation_resources['keypair']['private_key']
+        ssh_client = remote_client.RemoteClient(
+            server_ip,
+            CONF.validation.image_ssh_user,
+            pkey=pkey,
+            server=server,
+            servers_client=clients.servers_client
+        )
+        waiters.wait_for_ssh(
+            ssh_client,
+            clients.servers_client.build_timeout
+        )
+
+
 def create_test_server(clients, validatable=False, validation_resources=None,
                        tenant_network=None, wait_until=None,
                        volume_backed=False, name=None, flavor=None,
-                       image_id=None, wait_for_sshable=True, **kwargs):
+                       image_id=None, **kwargs):
     """Common wrapper utility returning a test server.
 
     This method is a common wrapper returning a test server that can be
@@ -69,7 +166,9 @@ def create_test_server(clients, validatable=False, validation_resources=None,
         server. Include a keypair, a security group and an IP.
     :param tenant_network: Tenant network to be used for creating a server.
     :param wait_until: Server status to wait for the server to reach after
-        its creation.
+        its creation. Additionally PINGABLE and SSHABLE states are also
+        accepted when the server is both validatable and has the required
+        validation_resources provided.
     :param volume_backed: Whether the server is volume backed or not.
         If this is true, a volume will be created and create server will be
         requested with 'block_device_mapping_v2' populated with below values:
@@ -93,12 +192,8 @@ def create_test_server(clients, validatable=False, validation_resources=None,
         CONF.compute.flavor_ref will be used instead.
     :param image_id: ID of the image to be used to provision the server. If not
         defined, CONF.compute.image_ref will be used instead.
-    :param wait_for_sshable: Check server's console log and wait until it will
-        be ready to login.
     :returns: a tuple
     """
-
-    # TODO(jlanoux) add support of wait_until PINGABLE/SSHABLE
 
     if name is None:
         name = data_utils.rand_name(__name__ + "-instance")
@@ -197,6 +292,7 @@ def create_test_server(clients, validatable=False, validation_resources=None,
     body = clients.servers_client.create_server(name=name, imageRef=image_id,
                                                 flavorRef=flavor,
                                                 **kwargs)
+    request_id = body.response['x-openstack-request-id']
 
     # handle the case of multiple servers
     if multiple_create_request:
@@ -208,39 +304,31 @@ def create_test_server(clients, validatable=False, validation_resources=None,
         body = rest_client.ResponseBody(body.response, body['server'])
         servers = [body]
 
-    def _setup_validation_fip():
-        if CONF.service_available.neutron:
-            ifaces = clients.interfaces_client.list_interfaces(server['id'])
-            validation_port = None
-            for iface in ifaces['interfaceAttachments']:
-                if iface['net_id'] == tenant_network['id']:
-                    validation_port = iface['port_id']
-                    break
-            if not validation_port:
-                # NOTE(artom) This will get caught by the catch-all clause in
-                # the wait_until loop below
-                raise ValueError('Unable to setup floating IP for validation: '
-                                 'port not found on tenant network')
-            clients.floating_ips_client.update_floatingip(
-                validation_resources['floating_ip']['id'],
-                port_id=validation_port)
-        else:
-            fip_client = clients.compute_floating_ips_client
-            fip_client.associate_floating_ip_to_server(
-                floating_ip=validation_resources['floating_ip']['ip'],
-                server_id=servers[0]['id'])
-
     if wait_until:
+
+        # NOTE(lyarwood): PINGABLE and SSHABLE both require the instance to
+        # go ACTIVE initially before we can setup the fip(s) etc so stash
+        # this additional wait state for later use.
+        wait_until_extra = None
+        if wait_until in ['PINGABLE', 'SSHABLE']:
+            wait_until_extra = wait_until
+            wait_until = 'ACTIVE'
+
         for server in servers:
             try:
                 waiters.wait_for_server_status(
-                    clients.servers_client, server['id'], wait_until)
-
-                # Multiple validatable servers are not supported for now. Their
-                # creation will fail with the condition above.
+                    clients.servers_client, server['id'], wait_until,
+                    request_id=request_id)
                 if CONF.validation.run_validation and validatable:
                     if CONF.validation.connect_method == 'floating':
-                        _setup_validation_fip()
+                        _setup_validation_fip(
+                            server, clients, tenant_network,
+                            validation_resources)
+                    if wait_until_extra:
+                        wait_for_ssh_or_ping(
+                            server, clients, tenant_network,
+                            validatable, validation_resources,
+                            wait_until_extra, False)
 
             except Exception:
                 with excutils.save_and_reraise_exception():
@@ -264,10 +352,6 @@ def create_test_server(clients, validatable=False, validation_resources=None,
                         except Exception:
                             LOG.exception('Server %s failed to delete in time',
                                           server['id'])
-
-    if (validatable and CONF.compute_feature_enabled.console_output and
-            wait_for_sshable):
-        waiters.wait_for_guest_os_boot(clients.servers_client, server['id'])
 
     return body, servers
 
