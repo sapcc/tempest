@@ -64,7 +64,7 @@ class VolumesCloneTest(base.BaseVolumeTest):
         """Test cloning a bootable volume"""
         # Create volume from image
         img_uuid = CONF.compute.image_ref
-        src_vol = self.create_volume(imageRef=img_uuid)
+        src_vol = self.create_volume(imageRef=img_uuid, size=10)
 
         # Create a volume from the bootable volume
         cloned_vol = self.create_volume(source_volid=src_vol['id'])
