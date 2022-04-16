@@ -106,7 +106,7 @@ class Client(object):
                 host=self.host, port=self.port, username=self.username)
         self._proxy_conn = None
 
-    def _get_ssh_connection(self, sleep=2, backoff=1.5):
+    def _get_ssh_connection(self, sleep=5, backoff=1):
         """Returns an ssh connection to the specified host."""
         bsleep = sleep
         ssh = paramiko.SSHClient()
