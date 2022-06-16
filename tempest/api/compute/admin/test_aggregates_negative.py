@@ -37,7 +37,7 @@ class AggregatesAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
         svc_list = cls.services_client.list_services(
             binary='nova-compute')['services']
         cls.hosts = [v['host'] for v in svc_list
-                     if v['status'] == 'enabled' and v['state'] == 'up']
+                     if v['status'] == 'enabled' and v['state'] == 'up' and "ironic" not in v["host"]]
 
     def _create_test_aggregate(self):
         aggregate_name = data_utils.rand_name(self.aggregate_name_prefix)
