@@ -68,7 +68,7 @@ class HostsAdminTestJSON(base.BaseV2ComputeAdminTest):
         """Showing nova host details"""
         hosts = self.client.list_hosts()['hosts']
 
-        hosts = [host for host in hosts if host['service'] == 'compute']
+        hosts = [host for host in hosts if host['service'] == 'compute' and "ironic" not in host["host_name"]]
         self.assertNotEmpty(hosts)
 
         for host in hosts:
