@@ -57,6 +57,10 @@ list_messages = {
                 'type': 'array',
                 'items': common_show_message
             },
+            'messages_links': {
+                'type': 'array',
+                'items': parameter_types.links
+            },
         },
         'additionalProperties': False,
         'required': ['messages']
