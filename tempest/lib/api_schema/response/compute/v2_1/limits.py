@@ -65,6 +65,60 @@ get_limit = {
                                      'totalRAMUsed',
                                      'totalSecurityGroupsUsed']
                     },
+                    'absolutePerFlavor': {
+                        'baremetal': {
+                            'maxTotalInstances': {
+                                'type': 'integer'
+                            },
+                            'totalInstancesUsed': {
+                                'type': 'integer'}
+                        },
+                        'bm091': {
+                            'maxTotalInstances': {'type': 'integer'
+                                                  },
+                            'totalInstancesUsed': {
+                                'type': 'integer'
+                            }
+                        },
+                        'hv_s2_c14_m256': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s2_c20_m384': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s2_c26_m384': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s2_c26_m768': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s2_c4_m128': {'maxTotalInstances': {'type': 'integer'},
+                                          'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s4_c24_m3072': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'hv_s8_c24_m6144': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'inspection_test': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'lol': {'maxTotalInstances': {'type': 'integer'},
+                                'totalInstancesUsed': {'type': 'integer'}},
+                        'testtesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttesttest': {
+                                              'maxTotalInstances': {'type': 'integer'},
+                                              'totalInstancesUsed': {'type': 'integer'}},
+                        'zg1bcm1.1medium': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'zg1bcm1.medium': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'zg1int1.medium': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'zg1mlx1.medium': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}},
+                        'zh2mlx1.2xlarge': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'zh2mlx1.3xlarge': {'maxTotalInstances': {'type': 'integer'},
+                                            'totalInstancesUsed': {'type': 'integer'}},
+                        'zh2mlx1.large': {'maxTotalInstances': {'type': 'integer'},
+                                          'totalInstancesUsed': {'type': 'integer'}},
+                        'zh2mlx1.large.pg': {'maxTotalInstances': {'type': 'integer'},
+                                             'totalInstancesUsed': {'type': 'integer'}},
+                        'zh2mlx1.xlarge': {'maxTotalInstances': {'type': 'integer'},
+                                           'totalInstancesUsed': {'type': 'integer'}}},
                     'rate': {
                         'type': 'array',
                         'items': {
