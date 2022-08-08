@@ -414,6 +414,11 @@ class RestClient(object):
                 return resp[i]
         return ""
 
+    def _get_global_request_id(self, resp):
+        if 'x-openstack-request-id' in resp:
+            return resp['x-openstack-request-id']
+        return ''
+
     def _safe_body(self, body, maxlen=4096):
         # convert a structure into a string safely
         try:
@@ -461,7 +466,10 @@ class RestClient(object):
         if req_headers is None:
             req_headers = {}
         # if we have the request id, put it in the right part of the log
-        extra = dict(request_id=self._get_request_id(resp))
+        extra = {
+            'request_id': self._get_request_id(resp),
+            'global_request_id': self._get_global_request_id(resp),
+        }
         # NOTE(sdague): while we still have 6 callers to this function
         # we're going to just provide work around on who is actually
         # providing timings by gracefully adding no content if they don't.
@@ -484,7 +492,7 @@ class RestClient(object):
             self._log_request_full(resp, req_headers, req_body,
                                    resp_body, extra)
 
-    def _parse_resp(self, body):
+    def _parse_resp(self, body, top_key_to_verify=None):
         try:
             body = json.loads(body)
         except ValueError:
@@ -508,8 +516,17 @@ class RestClient(object):
             if not hasattr(body, "keys") or len(body.keys()) != 1:
                 return body
             # Just return the "wrapped" element
-            _, first_item = tuple(body.items())[0]
+            first_key, first_item = tuple(body.items())[0]
             if isinstance(first_item, (dict, list)):
+                if top_key_to_verify is not None:
+                    msg_args = {
+                        'top_key': top_key_to_verify,
+                        'actual_key': first_key,
+                    }
+                    assert_msg = ("The expected top level key is "
+                                  "'%(top_key)s' but we found "
+                                  "'%(actual_key)s'." % msg_args)
+                    assert top_key_to_verify == first_key, assert_msg
                 return first_item
         except (ValueError, IndexError):
             pass

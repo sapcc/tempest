@@ -87,6 +87,19 @@
         horizon: true
 
 - job:
+    name: tempest-full-centos-9-stream
+    parent: tempest-full-py3
+    nodeset: devstack-single-node-centos-9-stream
+    # centos-9-stream is supported from yoga release onwards
+    branches: ^(?!stable/(pike|queens|rocky|stein|train|ussuri|victoria|wallaby|xena)).*$
+    description: |
+      Base integration test on CentOS 9 stream
+    vars:
+      # Required until bug/1949606 is resolved when using libvirt and QEMU
+      # >=5.0.0 with a [libvirt]virt_type of qemu (TCG).
+      configure_swap_size: 4096
+
+- job:
     name: tempest-integrated-networking
     parent: devstack-tempest
     branches: ^(?!stable/ocata).*$
@@ -129,17 +142,16 @@
         c-bak: false
 
 - job:
-    name: tempest-integrated-compute-centos-8-stream
+    name: tempest-integrated-compute-centos-9-stream
     parent: tempest-integrated-compute
-    # TODO(gmann): Make this job non voting until bug#1957941 if fixed.
-    voting: false
-    nodeset: devstack-single-node-centos-8-stream
-    branches: ^(?!stable/(ocata|pike|queens|rocky|stein|train|ussuri|victoria)).*$
+    nodeset: devstack-single-node-centos-9-stream
+    # centos-9-stream is supported from yoga release onwards
+    branches: ^(?!stable/(pike|queens|rocky|stein|train|ussuri|victoria|wallaby|xena)).*$
     description: |
       This job runs integration tests for compute. This is
       subset of 'tempest-full-py3' job and run Nova, Neutron, Cinder (except backup tests)
       and Glance related tests. This is meant to be run on Nova gate only.
-      This version of the job also uses CentOS 8 stream.
+      This version of the job also uses CentOS 9 stream.
     vars:
       # Required until bug/1949606 is resolved when using libvirt and QEMU
       # >=5.0.0 with a [libvirt]virt_type of qemu (TCG).
@@ -307,11 +319,19 @@
     vars:
       tox_envlist: full
       configure_swap_size: 4096
-      devstack_local_conf:
-        test-config:
-          "$TEMPEST_CONFIG":
-            validation:
-              ssh_key_type: 'ecdsa'
+      nslookup_target: 'opendev.org'
+
+- job:
+    name: tempest-centos9-stream-fips
+    parent: devstack-tempest
+    description: |
+      Integration testing for a FIPS enabled Centos 9 system
+    nodeset: devstack-single-node-centos-9-stream
+    pre-run: playbooks/enable-fips.yaml
+    vars:
+      tox_envlist: full
+      configure_swap_size: 4096
+      nslookup_target: 'opendev.org'
 
 - job:
     name: tempest-pg-full
@@ -338,12 +358,18 @@
         - grenade-skip-level:
             voting: false
         - tempest-integrated-networking
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
     gate:
       jobs:
         - grenade
         - tempest-integrated-networking
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
 
 - project-template:
     name: integrated-gate-compute
@@ -352,18 +378,33 @@
       (Nova, Neutron, Cinder and Glance related) in check and gate
       for the Nova integrated gate. This is meant to be
       run on Nova gate only.
+    # NOTE(gmann): This template is used for stable branches also so when we
+    # add/remove jobs here we need to make sure we should not change the
+    # behaviour for stable branches. For example, with branch variant we need
+    # to make sure old job keep running on stable branches and the new one run
+    # only from master(or the branch it was meant to run).
     check:
       jobs:
         - grenade-skip-level:
             voting: false
         - tempest-integrated-compute
-        - tempest-integrated-compute-centos-8-stream
-        - openstacksdk-functional-devstack
+        # centos-8-stream is tested from wallaby -> yoga branches
+        - tempest-integrated-compute-centos-8-stream:
+            branches: ^stable/(wallaby|xena|yoga).*$
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
     gate:
       jobs:
         - tempest-integrated-compute
-        - tempest-integrated-compute-centos-8-stream
-        - openstacksdk-functional-devstack
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
+    periodic-weekly:
+      jobs:
+        # centos-9-stream is tested from zed release onwards
+        - tempest-integrated-compute-centos-9-stream:
+            branches: ^(?!stable/(pike|queens|rocky|stein|train|ussuri|victoria|wallaby|xena|yoga)).*$
 
 - project-template:
     name: integrated-gate-placement
@@ -378,12 +419,18 @@
         - grenade-skip-level:
             voting: false
         - tempest-integrated-placement
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
     gate:
       jobs:
         - grenade
         - tempest-integrated-placement
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
 
 - project-template:
     name: integrated-gate-storage
@@ -398,12 +445,18 @@
         - grenade-skip-level:
             voting: false
         - tempest-integrated-storage
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
     gate:
       jobs:
         - grenade
         - tempest-integrated-storage
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
 
 - project-template:
     name: integrated-gate-object-storage
@@ -416,9 +469,15 @@
       jobs:
         - grenade
         - tempest-integrated-object-storage
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$
     gate:
       jobs:
         - grenade
         - tempest-integrated-object-storage
-        - openstacksdk-functional-devstack
+        # Do not run it on ussuri until below issue is fixed
+        # https://storyboard.openstack.org/#!/story/2010057
+        - openstacksdk-functional-devstack:
+            branches: ^(?!stable/ussuri).*$

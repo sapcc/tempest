@@ -65,12 +65,12 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             server = self.create_test_server(
                 validatable=True,
                 validation_resources=validation_resources,
-                wait_until='ACTIVE')
+                wait_until='SSHABLE')
             self.__class__.server_id = server['id']
         except Exception:
             # Rebuild server if something happened to it during a test
             self.__class__.server_id = self.recreate_server(
-                self.server_id, validatable=True)
+                self.server_id, validatable=True, wait_until='SSHABLE')
 
     def tearDown(self):
         super(ServerActionsTestJSON, self).tearDown()
@@ -92,7 +92,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServerActionsTestJSON, cls).resource_setup()
-        cls.server_id = cls.recreate_server(None, validatable=True)
+        cls.server_id = cls.recreate_server(None, validatable=True,
+                                            wait_until='SSHABLE')
 
     @decorators.idempotent_id('6158df09-4b82-4ab3-af6d-29cf36af858d')
     @testtools.skipUnless(CONF.compute_feature_enabled.change_password,

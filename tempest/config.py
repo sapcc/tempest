@@ -450,18 +450,6 @@ ComputeFeaturesGroup = [
                      "the '.' with '-' to comply with fqdn hostname. Nova "
                      "changed that in Wallaby cycle, if your cloud is older "
                      "than wallaby then you can keep/make it False."),
-    cfg.ListOpt('api_extensions',
-                default=['all'],
-                help='A list of enabled compute extensions with a special '
-                     'entry all which indicates every extension is enabled. '
-                     'Each extension should be specified with alias name. '
-                     'Empty list indicates all extensions are disabled',
-                     deprecated_for_removal=True,
-                     deprecated_reason='The Nova extensions API and mechanism '
-                                       'is deprecated. This option will be '
-                                       'removed when all releases supported '
-                                       'by tempest no longer contain the Nova '
-                                       'extensions API and mechanism.'),
     cfg.BoolOpt('change_password',
                 default=False,
                 help="Does the test environment support changing the admin "
@@ -686,6 +674,11 @@ ImageGroup = [
                         'publicURL', 'adminURL', 'internalURL'],
                help=("The endpoint type to use for the alternate image "
                      "service.")),
+    cfg.BoolOpt('image_caching_enabled',
+                default=False,
+                help=("Flag to enable if caching is enabled by image "
+                      "service, operator should set this parameter to True"
+                      "if 'image_cache_dir' is set in glance-api.conf")),
     cfg.StrOpt('http_image',
                default='http://download.cirros-cloud.net/0.3.1/'
                'cirros-0.3.1-x86_64-uec.tar.gz',
@@ -974,9 +967,15 @@ ValidationGroup = [
                help="Network used for SSH connections. Ignored if "
                     "connect_method=floating."),
     cfg.StrOpt('ssh_key_type',
-               default='rsa',
+               default='ecdsa',
                help='Type of key to use for ssh connections. '
                     'Valid types are rsa, ecdsa'),
+    cfg.IntOpt('allowed_network_downtime',
+               default=5.0,
+               help="Allowed VM network connection downtime during live "
+                    "migration, in seconds. "
+                    "When the measured downtime exceeds this value, an "
+                    "exception is raised."),
 ]
 
 volume_group = cfg.OptGroup(name='volume',
@@ -1170,6 +1169,11 @@ ObjectStoreFeaturesGroup = [
     cfg.BoolOpt('discoverability',
                 default=True,
                 help="Execute discoverability tests"),
+    cfg.StrOpt('tempurl_digest_hashlib',
+               default='sha256',
+               help="Hashing algorithm to use for the temp_url tests. "
+                    "Needs to be supported both by Swift and the "
+                    "hashlib module, for example sha1 or sha256"),
 ]
 
 

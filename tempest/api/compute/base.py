@@ -66,7 +66,9 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         # Setting network=True, subnet=True creates a default network
         cls.set_network_resources(
             network=cls.create_default_network,
-            subnet=cls.create_default_network)
+            subnet=cls.create_default_network,
+            router=cls.create_default_network,
+            dhcp=cls.create_default_network)
         super(BaseV2ComputeTest, cls).setup_credentials()
 
     @classmethod
@@ -412,7 +414,8 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         return image
 
     @classmethod
-    def recreate_server(cls, server_id, validatable=False, **kwargs):
+    def recreate_server(cls, server_id, validatable=False, wait_until='ACTIVE',
+                        **kwargs):
         """Destroy an existing class level server and creates a new one
 
         Some test classes use a test server that can be used by multiple
@@ -440,7 +443,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
             validatable,
             validation_resources=cls.get_class_validation_resources(
                 cls.os_primary),
-            wait_until='ACTIVE',
+            wait_until=wait_until,
             adminPass=cls.password,
             **kwargs)
         return server['id']
@@ -455,15 +458,31 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         except Exception:
             LOG.exception('Failed to delete server %s', server_id)
 
-    def resize_server(self, server_id, new_flavor_id, **kwargs):
+    def resize_server(
+        self, server_id, new_flavor_id, wait_until='ACTIVE', **kwargs
+    ):
         """resize and confirm_resize an server, waits for it to be ACTIVE."""
         self.servers_client.resize_server(server_id, new_flavor_id, **kwargs)
         waiters.wait_for_server_status(self.servers_client, server_id,
                                        'VERIFY_RESIZE')
         self.servers_client.confirm_resize_server(server_id)
+
         waiters.wait_for_server_status(
             self.servers_client, server_id, 'ACTIVE')
         server = self.servers_client.show_server(server_id)['server']
+
+        validation_resources = self.get_class_validation_resources(
+            self.os_primary)
+        if (
+            validation_resources and
+            wait_until in ("SSHABLE", "PINGABLE") and
+            CONF.validation.run_validation
+        ):
+            tenant_network = self.get_tenant_network()
+            compute.wait_for_ssh_or_ping(
+                server, self.os_primary, tenant_network,
+                True, validation_resources, wait_until, True)
+
         self.assert_flavor_equal(new_flavor_id, server['flavor'])
 
     def reboot_server(self, server_id, type):

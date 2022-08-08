@@ -321,11 +321,12 @@ class ScenarioTest(tempest.test.BaseTestCase):
         return server
 
     def create_volume(self, size=None, name=None, snapshot_id=None,
-                      imageRef=None, volume_type=None, **kwargs):
+                      imageRef=None, volume_type=None, wait_until='available',
+                      **kwargs):
         """Creates volume
 
         This wrapper utility creates volume and waits for volume to be
-        in 'available' state.
+        in 'available' state by default. If wait_until is None, means no wait.
         This method returns the volume's full representation by GET request.
         """
 
@@ -358,11 +359,12 @@ class ScenarioTest(tempest.test.BaseTestCase):
         self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.volumes_client.delete_volume, volume['id'])
         self.assertEqual(name, volume['name'])
-        waiters.wait_for_volume_resource_status(self.volumes_client,
-                                                volume['id'], 'available')
-        # The volume retrieved on creation has a non-up-to-date status.
-        # Retrieval after it becomes active ensures correct details.
-        volume = self.volumes_client.show_volume(volume['id'])['volume']
+        if wait_until:
+            waiters.wait_for_volume_resource_status(self.volumes_client,
+                                                    volume['id'], wait_until)
+            # The volume retrieved on creation has a non-up-to-date status.
+            # Retrieval after it becomes active ensures correct details.
+            volume = self.volumes_client.show_volume(volume['id'])['volume']
         return volume
 
     def create_backup(self, volume_id, name=None, description=None,
@@ -417,8 +419,12 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
         body = self.backups_client.restore_backup(backup_id, **kwargs)
         restore = body['restore']
-        self.addCleanup(self.volumes_client.delete_volume,
-                        restore['volume_id'])
+
+        using_pre_existing_volume = kwargs.get('volume_id', False)
+        if not using_pre_existing_volume:
+            self.addCleanup(self.volumes_client.delete_volume,
+                            restore['volume_id'])
+
         waiters.wait_for_volume_resource_status(self.backups_client,
                                                 backup_id, 'available')
         waiters.wait_for_volume_resource_status(self.volumes_client,
@@ -471,7 +477,8 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
         self.addCleanup(self.snapshots_client.wait_for_resource_deletion,
                         snapshot['id'])
-        self.addCleanup(self.snapshots_client.delete_snapshot, snapshot['id'])
+        self.addCleanup(test_utils.call_and_ignore_notfound_exc,
+                        self.snapshots_client.delete_snapshot, snapshot['id'])
         waiters.wait_for_volume_resource_status(self.snapshots_client,
                                                 snapshot['id'], 'available')
         snapshot = self.snapshots_client.show_snapshot(
@@ -641,7 +648,8 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
     def create_loginable_secgroup_rule(self, security_group_rules_client=None,
                                        secgroup=None,
-                                       security_groups_client=None):
+                                       security_groups_client=None,
+                                       rulesets=None):
         """Create loginable security group rule by neutron clients by default.
 
         This function will create:
@@ -655,24 +663,26 @@ class ScenarioTest(tempest.test.BaseTestCase):
             security_group_rules_client = self.security_group_rules_client
         if security_groups_client is None:
             security_groups_client = self.security_groups_client
+        if rulesets is None:
+            rulesets = [
+                dict(
+                    # ssh
+                    protocol='tcp',
+                    port_range_min=22,
+                    port_range_max=22,
+                ),
+                dict(
+                    # ping
+                    protocol='icmp',
+                ),
+                dict(
+                    # ipv6-icmp for ping6
+                    protocol='icmp',
+                    ethertype='IPv6',
+                )
+            ]
+
         rules = []
-        rulesets = [
-            dict(
-                # ssh
-                protocol='tcp',
-                port_range_min=22,
-                port_range_max=22,
-            ),
-            dict(
-                # ping
-                protocol='icmp',
-            ),
-            dict(
-                # ipv6-icmp for ping6
-                protocol='icmp',
-                ethertype='IPv6',
-            )
-        ]
         sec_group_rules_client = security_group_rules_client
         for ruleset in rulesets:
             for r_direction in ['ingress', 'egress']:
@@ -805,7 +815,9 @@ class ScenarioTest(tempest.test.BaseTestCase):
             name = data_utils.rand_name(self.__class__.__name__ + 'snapshot')
         LOG.debug("Creating a snapshot image for server: %s", server['name'])
         image = _images_client.create_image(server['id'], name=name, **kwargs)
-        image_id = image.response['location'].split('images/')[1]
+        # microversion 2.45 and above returns image_id
+        image_id = image.get('image_id') or image.response['location'].split(
+            'images/')[1]
         waiters.wait_for_image_status(_image_client, image_id, 'active')
 
         self.addCleanup(_image_client.wait_for_resource_deletion,
