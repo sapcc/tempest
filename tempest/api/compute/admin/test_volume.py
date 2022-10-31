@@ -15,12 +15,16 @@
 
 import io
 
+from oslo_log import log as logging
+
 from tempest.api.compute import base
 from tempest.common import waiters
 from tempest import config
 from tempest.lib import decorators
 
 CONF = config.CONF
+
+LOG = logging.getLogger(__name__)
 
 
 class BaseAttachSCSIVolumeTest(base.BaseV2ComputeAdminTest):
@@ -65,7 +69,17 @@ class BaseAttachSCSIVolumeTest(base.BaseV2ComputeAdminTest):
                         new_image['id'])
         self.addCleanup(self.admin_image_client.delete_image, new_image['id'])
         self.admin_image_client.store_image_file(new_image['id'], image_file)
-
+        LOG.info('Custom image properties %s' % new_image)
+        counter = 0
+        import time
+        while counter < 120:
+            counter += 1
+            body = self.admin_image_client.show_image(new_image['id'])
+            LOG.info('Custom image properties %s' % body)
+            if body['status'] == 'active':
+                break
+            time.sleep(1)
+            self.assertEqual("active", body['status'])
         return new_image['id']
 
 
@@ -82,9 +96,14 @@ class AttachSCSIVolumeTestJSON(BaseAttachSCSIVolumeTest):
         in instance after attach and detach of the volume.
         """
         custom_img = self._create_image_with_custom_property(
-            hw_scsi_model='virtio-scsi',
+            hw_scsi_model='lsiLogicsas',
             hw_disk_bus='scsi',
-            hw_cdrom_bus='scsi')
+            hw_cdrom_bus='scsi',
+            adapterType='lsiLogicsas',
+            vmware_adaptertype='lsiLogicsas',
+            vmware_ostype='ubuntu64Guest',
+            vmware_disktype='streamOptimized'
+        )
         validation_resources = self.get_test_validation_resources(
             self.os_primary)
         server = self.create_test_server(

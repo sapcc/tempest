@@ -12,6 +12,7 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+import time
 
 from urllib import parse as urlparse
 
@@ -380,7 +381,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             kwargs.update({'validatable': True,
                            'validation_resources': self.validation_resources})
         server = self.create_test_server(**kwargs)
-
+        time.sleep(180)
         # NOTE(mgoddard): Get detailed server to ensure addresses are present
         # in fixed IP case.
         server = self.servers_client.show_server(server['id'])['server']

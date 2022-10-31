@@ -51,7 +51,7 @@ paramiko.pkey.PKey.get_fingerprint = get_fingerprint
 
 class Client(object):
 
-    def __init__(self, host, username, password=None, timeout=300, pkey=None,
+    def __init__(self, host, username, password=None, timeout=600, pkey=None,
                  channel_timeout=10, look_for_keys=False, key_filename=None,
                  port=22, proxy_client=None, ssh_key_type='rsa'):
         """SSH client.
