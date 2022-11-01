@@ -66,7 +66,7 @@ def debug_ssh(function):
 class RemoteClient(object):
 
     def __init__(self, ip_address, username, password=None, pkey=None,
-                 server=None, servers_client=None, ssh_timeout=300,
+                 server=None, servers_client=None, ssh_timeout=600,
                  connect_timeout=60, console_output_enabled=True,
                  ssh_shell_prologue="set -eu -o pipefail; PATH=$PATH:/sbin;",
                  ping_count=1, ping_size=56, ssh_key_type='rsa'):

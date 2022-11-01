@@ -580,6 +580,7 @@ class RestClient(object):
         req_url, req_headers, req_body = self.auth_provider.auth_request(
             method, url, headers, body, self.filters)
 
+        self.LOG.info("Raw request URL: %s" % req_url)
         resp, resp_body = self.raw_request(
             req_url, method, headers=req_headers, body=req_body,
             chunked=chunked

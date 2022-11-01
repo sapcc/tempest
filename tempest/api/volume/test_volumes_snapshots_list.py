@@ -9,12 +9,14 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
+from oslo_log import log as logging
 
 from tempest.api.volume import base
 from tempest import config
 from tempest.lib import decorators
 
 CONF = config.CONF
+LOG = logging.getLogger(__name__)
 
 
 class VolumesSnapshotListTestJSON(base.BaseVolumeTest):
@@ -129,6 +131,15 @@ class VolumesSnapshotListTestJSON(base.BaseVolumeTest):
         self.assertEqual(sorted(sorted_list, reverse=(sort_dir == 'desc')),
                          sorted_list, msg)
 
+    def _list_snapshots_param_sort_ccloud_v3(self, sort, sort_dir):
+        sort_value = ":".join([sort, sort_dir])
+        snap_list = self.snapshots_client.list_snapshots(sort=sort_value)['snapshots']
+        self.assertNotEmpty(snap_list)
+        sorted_list = [snapshot['name'] for snapshot in snap_list]
+        msg = 'The list of snapshots was not sorted correctly.'
+        self.assertEqual(sorted(sorted_list, reverse=(sort_dir == 'desc')),
+                         sorted_list, msg)
+
     @decorators.idempotent_id('c5513ada-64c1-4d28-83b9-af3307ec1388')
     def test_snapshot_list_param_sort_id_asc(self):
         """Test listing snapshots sort by id ascendingly"""
@@ -152,14 +163,14 @@ class VolumesSnapshotListTestJSON(base.BaseVolumeTest):
     @decorators.idempotent_id('d58b5fed-0c37-42d3-8c5d-39014ac13c00')
     def test_snapshot_list_param_sort_name_asc(self):
         """Test listing snapshots sort by display_name ascendingly"""
-        self._list_snapshots_param_sort(sort_key='display_name',
-                                        sort_dir='asc')
+        self._list_snapshots_param_sort_ccloud_v3(
+            sort="display_name", sort_dir="asc")
 
     @decorators.idempotent_id('96ba6f4d-1f18-47e1-b4bc-76edc6c21250')
     def test_snapshot_list_param_sort_name_desc(self):
         """Test listing snapshots sort by display_name descendingly"""
-        self._list_snapshots_param_sort(sort_key='display_name',
-                                        sort_dir='desc')
+        self._list_snapshots_param_sort_ccloud_v3(
+            sort="display_name", sort_dir="desc")
 
     @decorators.idempotent_id('05489dde-44bc-4961-a1f5-3ce7ee7824f7')
     def test_snapshot_list_param_marker(self):
@@ -188,8 +199,10 @@ class VolumesSnapshotListTestJSON(base.BaseVolumeTest):
         should be returned.
         (The items in the all snapshots list start from position 0.)
         """
-        params = {'offset': 2, 'limit': 3}
+        offset = 2
+        limit = 3
+        params = {'offset': offset, 'limit': limit}
+        snapshots = self.snapshots_client.list_snapshots()['snapshots']
+        snapshots_with_limit = snapshots[offset:][:limit]
         snap_list = self.snapshots_client.list_snapshots(**params)['snapshots']
-        # Verify the list of snapshots skip offset=2 from the first element
-        # (total 3 elements), therefore only one snapshot should display
-        self.assertEqual(1, len(snap_list))
+        self.assertEqual(len(snapshots_with_limit), len(snap_list))

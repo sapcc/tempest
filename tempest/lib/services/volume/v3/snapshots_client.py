@@ -16,10 +16,13 @@
 from urllib import parse as urllib
 
 from oslo_serialization import jsonutils as json
+from oslo_log import log as logging
 
 from tempest.lib.api_schema.response.volume import snapshots as schema
 from tempest.lib.common import rest_client
 from tempest.lib import exceptions as lib_exc
+
+LOG = logging.getLogger(__name__)
 
 
 class SnapshotsClient(rest_client.RestClient):
@@ -43,6 +46,8 @@ class SnapshotsClient(rest_client.RestClient):
 
         resp, body = self.get(url)
         body = json.loads(body)
+        LOG.info("Snaphost list response response: %s" % resp)
+        LOG.info("Snaphost list response body: %s" % body)
         self.validate_response(list_schema, resp, body)
         return rest_client.ResponseBody(resp, body)
 
