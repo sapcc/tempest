@@ -350,6 +350,9 @@ class VolumesListTestJSON(base.BaseVolumeTest):
                 # from url (ie port). The fields to check are defined here.
                 fieldscheck = ['scheme', 'hostname', 'path', 'query', 'params',
                                'fragment']
+                # ccloud have internal URL's and scheme
+                fieldscheck = ['path', 'query', 'params',
+                               'fragment']
                 for field in fieldscheck:
                     self.assertEqual(getattr(currparsed, field),
                                      getattr(nextparsed, field),
