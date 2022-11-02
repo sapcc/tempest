@@ -49,19 +49,19 @@ def wait_for_server_status(client, server_id, status, ready_wait=True,
         # between the UNKNOWN->ACTIVE transition.
         # TODO(afazekas): enumerate and validate the stable status set
         if status == 'BUILD' and server_status != 'UNKNOWN':
-            return
+            return body
         if server_status == status:
             if ready_wait:
                 if status == 'BUILD':
-                    return
+                    return body
                 # NOTE(afazekas): The instance is in "ready for action state"
                 # when no task in progress
                 if task_state is None:
                     # without state api extension 3 sec usually enough
                     time.sleep(CONF.compute.ready_wait)
-                    return
+                    return body
             else:
-                return
+                return body
 
         time.sleep(client.build_interval)
         body = client.show_server(server_id)['server']
@@ -233,6 +233,26 @@ def wait_for_image_imported_to_stores(client, image_id, stores=None):
 
     exc_cls = lib_exc.TimeoutException
     start = int(time.time())
+
+    # NOTE(danms): Don't wait for stores that are read-only as those
+    # will never complete
+    try:
+        store_info = client.info_stores()['stores']
+        stores = ','.join(sorted([
+            store['id'] for store in store_info
+            if store.get('read-only') != 'true' and
+            (not stores or store['id'] in stores.split(','))]))
+    except lib_exc.NotFound:
+        # If multi-store is not enabled, then we can not resolve which
+        # ones are read-only, and stores must have been passed as None
+        # anyway for us to succeed. If not, then we should raise right
+        # now and avoid waiting since we will never see the stores
+        # appear.
+        if stores is not None:
+            raise lib_exc.TimeoutException(
+                'Image service has no store support; '
+                'cowardly refusing to wait for them.')
+
     while int(time.time()) - start < client.build_timeout:
         image = client.show_image(image_id)
         if image['status'] == 'active' and (stores is None or

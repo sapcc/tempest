@@ -34,6 +34,8 @@
         - glance-multistore-cinder-import:
             voting: false
             irrelevant-files: *tempest-irrelevant-files
+        - tempest-full-zed:
+            irrelevant-files: *tempest-irrelevant-files
         - tempest-full-yoga:
             irrelevant-files: *tempest-irrelevant-files
         - tempest-full-xena:
@@ -142,6 +144,8 @@
             irrelevant-files: *tempest-irrelevant-files
         - tempest-ipv6-only:
             irrelevant-files: *tempest-irrelevant-files-3
+        - tempest-multinode-full-py3:
+            irrelevant-files: *tempest-irrelevant-files
         #- devstack-plugin-ceph-tempest-py3:
         #    irrelevant-files: *tempest-irrelevant-files
         #- tempest-full-centos-9-stream:
@@ -150,6 +154,7 @@
             irrelevant-files: *tempest-irrelevant-files
     experimental:
       jobs:
+        - nova-multi-cell
         - tempest-with-latest-microversion
         - tempest-stestr-master
         - tempest-cinder-v2-api:
@@ -168,9 +173,11 @@
             irrelevant-files: *tempest-irrelevant-files
     periodic-stable:
       jobs:
+        - tempest-full-zed
         - tempest-full-yoga
         - tempest-full-xena
         - tempest-full-wallaby-py3
+        - tempest-slow-zed
         - tempest-slow-yoga
         - tempest-slow-xena
         - tempest-slow-wallaby
