@@ -9,14 +9,12 @@
 #    WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied. See the
 #    License for the specific language governing permissions and limitations
 #    under the License.
-from oslo_log import log as logging
 
 from tempest.api.volume import base
 from tempest import config
 from tempest.lib import decorators
 
 CONF = config.CONF
-LOG = logging.getLogger(__name__)
 
 
 class VolumesSnapshotListTestJSON(base.BaseVolumeTest):
