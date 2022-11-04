@@ -48,6 +48,7 @@ class VolumesSnapshotTestJSON(base.BaseVolumeTest):
         server = self.create_server(wait_until='SSHABLE')
         # NOTE(zhufl) Here we create volume from self.image_ref for adding
         # coverage for "creating snapshot from non-blank volume".
+        self.volumes_client.build_timeout = 900
         volume = self.create_volume(imageRef=self.image_ref)
         self.attach_volume(server['id'], volume['id'])
 
@@ -65,6 +66,7 @@ class VolumesSnapshotTestJSON(base.BaseVolumeTest):
         self.delete_snapshot(snapshot1['id'])
         self.delete_snapshot(snapshot3['id'])
         self.delete_snapshot(snapshot2['id'])
+        self.volumes_client.build_timeout = 600
 
     @decorators.idempotent_id('5210a1de-85a0-11e6-bb21-641c676a5d61')
     @utils.services('compute')
@@ -81,6 +83,7 @@ class VolumesSnapshotTestJSON(base.BaseVolumeTest):
 
         # Create a server and attach it
         server = self.create_server(wait_until='SSHABLE')
+        self.volumes_client.build_timeout = 900
         self.attach_volume(server['id'], self.volume_origin['id'])
 
         # Now that the volume is attached, create other snapshots
@@ -92,6 +95,7 @@ class VolumesSnapshotTestJSON(base.BaseVolumeTest):
         self.delete_snapshot(snapshot3['id'])
         self.delete_snapshot(snapshot1['id'])
         self.delete_snapshot(snapshot2['id'])
+        self.volumes_client.build_timeout = 600
 
     @decorators.idempotent_id('2a8abbe4-d871-46db-b049-c41f5af8216e')
     def test_snapshot_create_get_list_update_delete(self):
