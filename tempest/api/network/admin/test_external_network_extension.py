@@ -77,7 +77,7 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         # List networks as a normal user and confirm the external
         # network extension attribute is returned for those networks
         # that were created as external
-        body = self.networks_client.list_networks()
+        body = self.admin_networks_client.list_networks()
         networks_list = [net['id'] for net in body['networks']]
         self.assertIn(external_network['id'], networks_list)
         self.assertIn(self.network['id'], networks_list)
@@ -94,7 +94,7 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         external_network = self._create_network()
         # Show an external network as a normal user and confirm the
         # external network extension attribute is returned.
-        body = self.networks_client.show_network(external_network['id'])
+        body = self.admin_networks_client.show_network(external_network['id'])
         show_ext_net = body['network']
         self.assertEqual(external_network['name'], show_ext_net['name'])
         self.assertEqual(external_network['id'], show_ext_net['id'])
