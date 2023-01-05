@@ -155,11 +155,13 @@ class PortsTestJSON(sec_base.BaseSecGroupTest):
         # due to possible delay between POST request and resource creation.
         # TODO(rfolco): Neutron Bug #1365341 is fixed, can remove the key
         # extra_dhcp_opts in the O release (K/L gate jobs still need it).
+        # TODO: delete network:tenant_id after neutron update in ccloud
         self.assertThat(self.port,
                         custom_matchers.MatchesDictExceptForKeys
                         (port, excluded_keys=['extra_dhcp_opts',
                                               'created_at',
-                                              'updated_at']))
+                                              'updated_at',
+                                              'network:tenant_id']))
 
     @decorators.idempotent_id('45fcdaf2-dab0-4c13-ac6c-fcddfb579dbd')
     def test_show_port_fields(self):
