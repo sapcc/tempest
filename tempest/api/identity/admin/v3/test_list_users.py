@@ -30,7 +30,7 @@ class UsersV3TestJSON(base.BaseIdentityV3AdminTest):
         # expected: user expected in the list response
         # not_expected: user, which should not be present in list response
         body = self.users_client.list_users(**params)['users']
-        self.assertIn(expected[key], map(lambda x: x[key], body))
+        self.assertIn(expected[key], list(map(lambda x: x[key], body)))
         self.assertNotIn(not_expected[key],
                          map(lambda x: x[key], body))
 
@@ -79,9 +79,18 @@ class UsersV3TestJSON(base.BaseIdentityV3AdminTest):
     @decorators.idempotent_id('bff8bf2f-9408-4ef5-b63a-753c8c2124eb')
     def test_list_users_with_not_enabled(self):
         """List the users with not enabled"""
-        params = {'enabled': False}
+        domain_disabled_user = self.users_client.create_user(
+            name=data_utils.rand_name('test_user'),
+            password=data_utils.rand_password(),
+            domain_id=self.domain['id'],
+            email=self.alt_email,
+            enabled=False,
+        )['user']
+        self.addCleanup(self.users_client.delete_user,
+                        domain_disabled_user['id'])
+        params = {'enabled': False, "domain_id": self.domain["id"]}
         self._list_users_with_params(params, 'enabled',
-                                     self.non_domain_enabled_user,
+                                     domain_disabled_user,
                                      self.domain_enabled_user)
 
     @decorators.idempotent_id('c285bb37-7325-4c02-bff3-3da5d946d683')
