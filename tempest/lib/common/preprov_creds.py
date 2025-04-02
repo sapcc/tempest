@@ -459,15 +459,12 @@ class PreProvisionedCredentialProvider(cred_provider.CredentialProvider):
                                              identity_uri=self.identity_uri)
         networks_client = net_clients.network.NetworksClient()
         net_name = self.hash_dict['networks'].get(hash, None)
-        LOG.debug('The net_name is %s', net_name)
         try:
             network = fixed_network.get_network_from_name(
                 net_name, networks_client)
-            LOG.debug('The network is %s', network)
         except lib_exc.InvalidTestResource:
             network = {}
         net_creds.set_resources(network=network)
-        LOG.debug('The net_creds are %s', net_creds)
         return net_creds
 
     def _extend_credentials(self, creds_dict):
