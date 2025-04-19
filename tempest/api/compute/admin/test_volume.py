@@ -111,7 +111,8 @@ class AttachSCSIVolumeTestJSON(BaseAttachSCSIVolumeTest):
             config_drive=True,
             validatable=True,
             validation_resources=validation_resources,
-            wait_until="SSHABLE")
+            wait_until="SSHABLE",
+            volume_backed=True)
         # NOTE(lyarwood): self.create_test_server delete the server
         # at class level cleanup so add server cleanup to ensure that
         # the instance is deleted first before created image. This

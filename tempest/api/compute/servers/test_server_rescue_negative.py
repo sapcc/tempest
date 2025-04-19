@@ -29,6 +29,7 @@ CONF = config.CONF
 
 class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of server rescue"""
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -50,9 +51,11 @@ class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
         rescue_password = data_utils.rand_password()
         # Server for negative tests
         server = cls.create_test_server(adminPass=cls.password,
-                                        wait_until='BUILD')
+                                        wait_until='BUILD',
+                                        volume_backed=True)
         resc_server = cls.create_test_server(adminPass=rescue_password,
-                                             wait_until='ACTIVE')
+                                             wait_until='ACTIVE',
+                                             volume_backed=True)
         cls.server_id = server['id']
         cls.rescue_id = resc_server['id']
 
@@ -150,7 +153,8 @@ class ServerRescueNegativeTestJSON(base.BaseV2ComputeTest):
             adminPass=self.password,
             wait_until="SSHABLE",
             validatable=True,
-            validation_resources=validation_resources)
+            validation_resources=validation_resources,
+            volume_backed=True)
         # Attach the volume to the server
         self.attach_volume(server, volume)
 

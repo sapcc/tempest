@@ -29,6 +29,7 @@ class ServerGroupTestJSON(base.BaseV2ComputeTest):
     It also adds the tests for list and get details of server-groups
     """
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -131,7 +132,8 @@ class ServerGroupTestJSON(base.BaseV2ComputeTest):
         """Test creating a server with the scheduler hint 'group'"""
         hints = {'group': self.created_server_group['id']}
         server = self.create_test_server(scheduler_hints=hints,
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
 
         # Check a server is in the group

@@ -42,7 +42,7 @@ class MigrationsAdminTest(base.BaseV2ComputeAdminTest):
                           'Resize not available.')
     def test_list_migrations_in_flavor_resize_situation(self):
         """Admin can get the migrations list containing the resized server"""
-        server = self.create_test_server(wait_until="ACTIVE")
+        server = self.create_test_server(wait_until="ACTIVE", volume_backed=True)
         server_id = server['id']
 
         self.resize_server(server_id, self.flavor_ref_alt)
@@ -138,7 +138,7 @@ class MigrationsAdminTest(base.BaseV2ComputeAdminTest):
             msg = "Less than 2 compute nodes, skipping multinode tests."
             raise self.skipException(msg)
 
-        server = self.create_test_server(wait_until="ACTIVE")
+        server = self.create_test_server(wait_until="ACTIVE", volume_backed=True)
         src_host = self.get_host_for_server(server['id'])
 
         self.admin_servers_client.migrate_server(server['id'])

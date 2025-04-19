@@ -21,6 +21,7 @@ from tempest.lib import decorators
 class MultipleCreateTestJSON(base.BaseV2ComputeTest):
     """Test creating multiple servers in one request"""
     create_default_network = True
+    volume_backed = True
 
     @decorators.idempotent_id('61e03386-89c3-449c-9bb1-a06f423fd9d1')
     def test_multiple_create(self):
@@ -33,7 +34,8 @@ class MultipleCreateTestJSON(base.BaseV2ComputeTest):
             self.os_primary,
             wait_until='ACTIVE',
             min_count=2,
-            tenant_network=tenant_network)
+            tenant_network=tenant_network,
+            volume_backed=True)
         for server in servers:
             self.addCleanup(self.servers_client.delete_server, server['id'])
         # NOTE(maurosr): do status response check and also make sure that
@@ -53,5 +55,6 @@ class MultipleCreateTestJSON(base.BaseV2ComputeTest):
         body = self.create_test_server(wait_until='ACTIVE',
                                        min_count=1,
                                        max_count=2,
-                                       return_reservation_id=True)
+                                       return_reservation_id=True,
+                                       volume_backed=True)
         self.assertIn('reservation_id', body)

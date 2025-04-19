@@ -28,6 +28,7 @@ CONF = config.CONF
 
 class ServerRescueTestBase(base.BaseV2ComputeTest):
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -47,7 +48,8 @@ class ServerRescueTestBase(base.BaseV2ComputeTest):
 
         password = data_utils.rand_password()
         server = cls.create_test_server(adminPass=password,
-                                        wait_until='ACTIVE')
+                                        wait_until='ACTIVE',
+                                        volume_backed=True)
         cls.servers_client.rescue_server(server['id'], adminPass=password)
         waiters.wait_for_server_status(cls.servers_client, server['id'],
                                        'RESCUE')
@@ -56,13 +58,15 @@ class ServerRescueTestBase(base.BaseV2ComputeTest):
 
 class ServerRescueTestJSON(ServerRescueTestBase):
     """Test server rescue"""
+    volume_backed = True
 
     @decorators.idempotent_id('fd032140-714c-42e4-a8fd-adcd8df06be6')
     def test_rescue_unrescue_instance(self):
         """Test rescue/unrescue server"""
         password = data_utils.rand_password()
         server = self.create_test_server(adminPass=password,
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         self.servers_client.rescue_server(server['id'], adminPass=password)
         waiters.wait_for_server_status(self.servers_client, server['id'],
                                        'RESCUE')
@@ -75,6 +79,7 @@ class ServerRescueTestJSONUnderV235(ServerRescueTestBase):
     """Test server rescue with compute microversion less than 2.36"""
 
     max_microversion = '2.35'
+    volume_backed = True
 
     # TODO(zhufl): After 2.35 we should switch to neutron client to create
     # floating ip, but that will need admin credential, so the testcases will
@@ -113,6 +118,7 @@ class ServerRescueTestJSONUnderV235(ServerRescueTestBase):
 
 
 class BaseServerStableDeviceRescueTest(base.BaseV2ComputeTest):
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -139,7 +145,8 @@ class BaseServerStableDeviceRescueTest(base.BaseV2ComputeTest):
         server = self.create_test_server(
             wait_until=wait_until,
             validatable=validatable,
-            validation_resources=validation_resources)
+            validation_resources=validation_resources,
+            volume_backed=True)
         image_id = self.create_image_from_server(
             server['id'], wait_until='ACTIVE')['id']
 
@@ -148,7 +155,8 @@ class BaseServerStableDeviceRescueTest(base.BaseV2ComputeTest):
                 wait_until=wait_until,
                 validatable=validatable,
                 validation_resources=validation_resources,
-                block_device_mapping_v2=block_device_mapping_v2)
+                block_device_mapping_v2=block_device_mapping_v2,
+                volume_backed=True)
 
         if hw_rescue_bus:
             self.images_client.update_image(
@@ -184,6 +192,7 @@ class BaseServerStableDeviceRescueTest(base.BaseV2ComputeTest):
 
 class ServerStableDeviceRescueTestIDE(BaseServerStableDeviceRescueTest):
     """Test rescuing server using an IDE device for the rescue disk"""
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -203,6 +212,7 @@ class ServerStableDeviceRescueTestIDE(BaseServerStableDeviceRescueTest):
 
 class ServerStableDeviceRescueTest(BaseServerStableDeviceRescueTest):
     """Test rescuing server specifying type of device for the rescue disk"""
+    volume_backed = True
 
     @decorators.idempotent_id('16865750-1417-4854-bcf7-496e6753c01e')
     def test_stable_device_rescue_disk_virtio(self):
@@ -260,7 +270,7 @@ class ServerBootFromVolumeStableRescueTest(BaseServerStableDeviceRescueTest):
     Test rescuing server specifying type of device for the rescue disk with
     compute microversion greater than 2.86.
     """
-
+    volume_backed = True
     min_microversion = '2.87'
 
     @classmethod

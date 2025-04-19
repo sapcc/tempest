@@ -24,7 +24,7 @@ CONF = config.CONF
 
 class ServerMetadataNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of server metadata"""
-
+    volume_backed = True
     create_default_network = True
 
     @classmethod
@@ -36,7 +36,9 @@ class ServerMetadataNegativeTestJSON(base.BaseV2ComputeTest):
     def resource_setup(cls):
         super(ServerMetadataNegativeTestJSON, cls).resource_setup()
         cls.tenant_id = cls.client.tenant_id
-        cls.server = cls.create_test_server(metadata={}, wait_until='ACTIVE')
+        cls.server = cls.create_test_server(metadata={},
+                                            wait_until='ACTIVE',
+                                            volume_backed=True)
 
     @decorators.attr(type=['negative'])
     @decorators.idempotent_id('fe114a8f-3a57-4eff-9ee2-4e14628df049')

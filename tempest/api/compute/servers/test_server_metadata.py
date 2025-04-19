@@ -25,6 +25,7 @@ class ServerMetadataTestJSON(base.BaseV2ComputeTest):
     """Test server metadata"""
 
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -41,7 +42,8 @@ class ServerMetadataTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServerMetadataTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(metadata={}, wait_until='ACTIVE')
+        cls.server = cls.create_test_server(metadata={}, wait_until='ACTIVE',
+                                            volume_backed=True)
 
     def setUp(self):
         super(ServerMetadataTestJSON, self).setUp()

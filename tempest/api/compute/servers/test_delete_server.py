@@ -28,7 +28,7 @@ CONF = config.CONF
 class DeleteServersTestJSON(base.BaseV2ComputeTest):
     """Test deleting servers in various states"""
     create_default_network = True
-
+    volume_backed = True
     # NOTE: Server creations of each test class should be under 10
     # for preventing "Quota exceeded for instances"
 
@@ -40,21 +40,21 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
     @decorators.idempotent_id('9e6e0c87-3352-42f7-9faf-5d6210dbd159')
     def test_delete_server_while_in_building_state(self):
         """Test deleting a server while it's VM state is Building"""
-        server = self.create_test_server(wait_until='BUILD')
+        server = self.create_test_server(wait_until='BUILD', volume_backed=True)
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
     @decorators.idempotent_id('925fdfb4-5b13-47ea-ac8a-c36ae6fddb05')
     def test_delete_active_server(self):
         """Test deleting a server while it's VM state is Active"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
 
     @decorators.idempotent_id('546d368c-bb6c-4645-979a-83ed16f3a6be')
     def test_delete_server_while_in_shutoff_state(self):
         """Test deleting a server while it's VM state is Shutoff"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.stop_server(server['id'])
         waiters.wait_for_server_status(self.client, server['id'], 'SHUTOFF')
         self.client.delete_server(server['id'])
@@ -65,7 +65,7 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
                           'Pause is not available.')
     def test_delete_server_while_in_pause_state(self):
         """Test deleting a server while it's VM state is Pause"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.pause_server(server['id'])
         waiters.wait_for_server_status(self.client, server['id'], 'PAUSED')
         self.client.delete_server(server['id'])
@@ -76,7 +76,7 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
                           'Suspend is not available.')
     def test_delete_server_while_in_suspended_state(self):
         """Test deleting a server while it's VM state is Suspended"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.suspend_server(server['id'])
         waiters.wait_for_server_status(self.client, server['id'], 'SUSPENDED')
         self.client.delete_server(server['id'])
@@ -87,7 +87,7 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
                           'Shelve is not available.')
     def test_delete_server_while_in_shelved_state(self):
         """Test deleting a server while it's VM state is Shelved"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         compute.shelve_server(self.client, server['id'])
 
         self.client.delete_server(server['id'])
@@ -98,7 +98,7 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
                       'Resize not available.')
     def test_delete_server_while_in_verify_resize_state(self):
         """Test deleting a server while it's VM state is VERIFY_RESIZE"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.resize_server(server['id'], self.flavor_ref_alt)
         waiters.wait_for_server_status(self.client, server['id'],
                                        'VERIFY_RESIZE')
@@ -109,7 +109,7 @@ class DeleteServersTestJSON(base.BaseV2ComputeTest):
     @utils.services('volume')
     def test_delete_server_while_in_attached_volume(self):
         """Test deleting a server while a volume is attached to it"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
         volume = self.create_volume()
         self.attach_volume(server, volume)

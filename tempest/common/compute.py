@@ -138,6 +138,7 @@ def wait_for_ssh_or_ping(server, clients, tenant_network,
         )
     if wait_until == 'SSHABLE':
         pkey = validation_resources['keypair']['private_key']
+        LOG.info(f"Private key is {pkey}")
         ssh_client = remote_client.RemoteClient(
             server_ip,
             CONF.validation.image_ssh_user,

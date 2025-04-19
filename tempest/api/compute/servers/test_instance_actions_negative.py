@@ -23,7 +23,7 @@ class InstanceActionsNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of instance actions"""
 
     create_default_network = True
-
+    volume_backed = True
     @classmethod
     def setup_clients(cls):
         super(InstanceActionsNegativeTestJSON, cls).setup_clients()
@@ -32,7 +32,7 @@ class InstanceActionsNegativeTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(InstanceActionsNegativeTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
     @decorators.attr(type=['negative'])
     @decorators.idempotent_id('67e1fce6-7ec2-45c6-92d4-0a8f1a632910')

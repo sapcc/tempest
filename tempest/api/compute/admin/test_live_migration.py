@@ -312,7 +312,8 @@ class LiveMigrationRemoteConsolesV26Test(LiveMigrationTestBase):
         update behavior is correctly done, by connecting to the serial
         consoles of the instances before and after the live migration.
         """
-        server01_id = self.create_test_server(wait_until='ACTIVE')['id']
+        server01_id = self.create_test_server(wait_until='ACTIVE',
+                                              volume_backed=True)['id']
         hints = {'different_host': server01_id}
         server02_id = self.create_test_server(scheduler_hints=hints,
                                               wait_until='ACTIVE')['id']

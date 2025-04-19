@@ -20,7 +20,7 @@ from tempest.lib import decorators
 
 class InstanceActionsTestJSON(base.BaseV2ComputeTest):
     """Test instance actions API"""
-
+    volume_backed = True
     create_default_network = True
 
     @classmethod
@@ -31,7 +31,7 @@ class InstanceActionsTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(InstanceActionsTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.request_id = cls.server.response['x-compute-request-id']
 
     @decorators.idempotent_id('77ca5cc5-9990-45e0-ab98-1de8fead201a')
@@ -58,7 +58,7 @@ class InstanceActionsV221TestJSON(base.BaseV2ComputeTest):
     """Test instance actions with compute microversion greater than 2.20"""
 
     create_default_network = True
-
+    volume_backed = True
     min_microversion = '2.21'
     max_microversion = 'latest'
 
@@ -74,7 +74,7 @@ class InstanceActionsV221TestJSON(base.BaseV2ComputeTest):
         Listing actions for deleted instance should succeed and the returned
         actions should contain 'create' and 'delete'.
         """
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.delete_server(server['id'])
         waiters.wait_for_server_termination(self.client, server['id'])
         body = (self.client.list_instance_actions(server['id'])

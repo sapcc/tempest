@@ -42,6 +42,8 @@ class TestServerBasicOps(manager.ScenarioTest):
      * Terminate the instance
     """
 
+    volume_backed = True
+
     def setUp(self):
         super(TestServerBasicOps, self).setUp()
         self.run_ssh = CONF.validation.run_validation
@@ -136,7 +138,9 @@ class TestServerBasicOps(manager.ScenarioTest):
             key_name=keypair['name'],
             security_groups=[{'name': security_group['name']}],
             config_drive=CONF.compute_feature_enabled.config_drive,
-            metadata=self.md)
+            metadata=self.md,
+            volume_backed=True,
+        )
         self.verify_ssh(keypair)
         self.verify_metadata()
         self.verify_metadata_on_config_drive()

@@ -30,7 +30,7 @@ class VirtualInterfacesNegativeTestJSON(base.BaseV2ComputeTest):
     """
 
     max_microversion = '2.43'
-
+    volume_backed = True
     depends_on_nova_network = True
 
     @classmethod

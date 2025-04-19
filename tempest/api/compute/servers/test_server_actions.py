@@ -38,6 +38,8 @@ LOG = logging.getLogger(__name__)
 class ServerActionsTestJSON(base.BaseV2ComputeTest):
     """Test server actions"""
 
+    volume_backed = True
+
     def setUp(self):
         # NOTE(afazekas): Normally we use the same server with all test cases,
         # but if it has an issue, we build a new one
@@ -66,12 +68,14 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
             server = self.create_test_server(
                 validatable=True,
                 validation_resources=self.validation_resources,
-                wait_until='SSHABLE')
+                wait_until='SSHABLE',
+                volume_backed=True)
             self.__class__.server_id = server['id']
         except Exception:
             # Rebuild server if something happened to it during a test
             self.__class__.server_id = self.recreate_server(
-                self.server_id, validatable=True, wait_until='SSHABLE')
+                self.server_id, validatable=True, wait_until='SSHABLE',
+            volume_backed=True)
 
     def tearDown(self):
         super(ServerActionsTestJSON, self).tearDown()
@@ -94,7 +98,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
     def resource_setup(cls):
         super(ServerActionsTestJSON, cls).resource_setup()
         cls.server_id = cls.recreate_server(None, validatable=True,
-                                            wait_until='SSHABLE')
+                                            wait_until='SSHABLE',
+                                            volume_backed=True)
 
     @decorators.idempotent_id('6158df09-4b82-4ab3-af6d-29cf36af858d')
     @testtools.skipUnless(CONF.compute_feature_enabled.change_password,
@@ -110,7 +115,8 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         newserver = self.create_test_server(
             validatable=True,
             validation_resources=self.validation_resources,
-            wait_until='ACTIVE')
+            wait_until='ACTIVE',
+            volume_backed=True)
         self.addCleanup(self.delete_server, newserver['id'])
         # The server's password should be set to the provided password
         new_password = 'Newpass1234'
@@ -172,7 +178,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
     @decorators.idempotent_id('1d1c9104-1b0a-11e7-a3d4-fa163e65f5ce')
     def test_remove_server_all_security_groups(self):
         """Test removing all security groups from server"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
         # Remove all Security group
         self.client.remove_security_group(
@@ -630,7 +636,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         The console output lines length should be bigger than the one
         of test_get_console_output.
         """
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
         def _check_full_length_console_log():
             output = self.client.get_console_output(server['id'])['output']
@@ -657,7 +663,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         # NOTE: SHUTOFF is irregular status. To avoid test instability,
         #       one server is created only for this test without using
         #       the server that was created in setUpClass.
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         temp_server_id = server['id']
 
         self.client.stop_server(temp_server_id)
@@ -731,7 +737,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
                           'Pause is not available.')
     def test_shelve_paused_server(self):
         """Test shelving a paused server"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.pause_server(server['id'])
         waiters.wait_for_server_status(self.client, server['id'], 'PAUSED')
         # Check if Shelve operation is successful on paused server.
@@ -804,13 +810,14 @@ class ServersAaction247Test(base.BaseV2ComputeTest):
     """
 
     min_microversion = '2.47'
+    volume_backed = True
 
     @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
                           'Snapshotting not available, backup not possible.')
     @utils.services('image')
     @decorators.idempotent_id('252a4bdd-6366-4dae-9994-8c30aa660f23')
     def test_create_backup(self):
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
         backup1 = data_utils.rand_name('backup-1')
         # Just check create_back to verify the schema with 2.47

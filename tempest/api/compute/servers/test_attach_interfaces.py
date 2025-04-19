@@ -78,7 +78,8 @@ class AttachInterfacesTestBase(base.BaseV2ComputeTest):
         server = self.create_test_server(
             validatable=True,
             validation_resources=validation_resources,
-            wait_until='ACTIVE')
+            wait_until='ACTIVE',
+            volume_backed=True)
         # NOTE(mgoddard): Get detailed server to ensure addresses are present
         # in fixed IP case.
         server = self.servers_client.show_server(server['id'])['server']
@@ -319,7 +320,8 @@ class AttachInterfacesTestJSON(AttachInterfacesTestBase):
             _, servers = compute.create_test_server(
                 self.os_primary, tenant_network=network,
                 wait_until='ACTIVE', validatable=True,
-                validation_resources=validation_resources)
+                validation_resources=validation_resources,
+                volume_backed=True)
             return servers[0]
 
         servers = [_create_validatable_server(), _create_validatable_server()]
@@ -440,7 +442,7 @@ class AttachInterfacesV270Test(AttachInterfacesTestBase):
 
         Checking create, get, list interface APIs response schema.
         """
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         try:
             iface = self.interfaces_client.create_interface(server['id'])[
                 'interfaceAttachment']

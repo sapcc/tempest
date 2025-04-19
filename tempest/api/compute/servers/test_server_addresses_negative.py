@@ -22,6 +22,7 @@ from tempest.lib import exceptions as lib_exc
 class ServerAddressesNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of listing server addresses"""
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -31,7 +32,7 @@ class ServerAddressesNegativeTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServerAddressesNegativeTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
     @decorators.attr(type=['negative'])
     @decorators.idempotent_id('02c3f645-2d2e-4417-8525-68c0407d001b')

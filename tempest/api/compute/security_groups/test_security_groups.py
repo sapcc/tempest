@@ -98,7 +98,7 @@ class SecurityGroupsTestJSON(base.BaseSecurityGroupsTest):
 
         # Create server and add the security group created
         # above to the server we just created
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         server_id = server['id']
         self.servers_client.add_security_group(server_id, name=sg['name'])
 
@@ -158,7 +158,7 @@ class SecurityGroupsTestJSON(base.BaseSecurityGroupsTest):
         assigned_security_groups_ids = [sg['id'], sg2['id']]
         # Create server and add the security group created
         # above to the server we just created
-        server_id = self.create_test_server(wait_until='ACTIVE')['id']
+        server_id = self.create_test_server(wait_until='ACTIVE', volume_backed=True)['id']
         # add security groups to server
         self.servers_client.add_security_group(server_id, name=sg['name'])
         self.servers_client.add_security_group(server_id, name=sg2['name'])

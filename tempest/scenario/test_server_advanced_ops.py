@@ -34,6 +34,7 @@ class TestServerAdvancedOps(manager.ScenarioTest):
     This test case stresses some advanced server instance operations:
      * Sequence suspend resume
     """
+    volume_backed = True
 
     @classmethod
     def setup_credentials(cls):
@@ -47,7 +48,7 @@ class TestServerAdvancedOps(manager.ScenarioTest):
     @utils.services('compute')
     def test_server_sequence_suspend_resume(self):
         # We create an instance for use in this test
-        instance_id = self.create_server()['id']
+        instance_id = self.create_server(volume_backed=True)['id']
 
         for _ in range(2):
             LOG.debug("Suspending instance %s", instance_id)

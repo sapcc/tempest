@@ -67,7 +67,7 @@ class FloatingIPsAssociationTestJSON(base.BaseFloatingIPsTest):
         super(FloatingIPsAssociationTestJSON, cls).resource_setup()
 
         # Server creation
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.server_id = cls.server['id']
         # Floating IP creation
         body = cls.client.create_floating_ip(
@@ -109,7 +109,7 @@ class FloatingIPsAssociationTestJSON(base.BaseFloatingIPsTest):
         # positive test:Association of an already associated floating IP
         # to specific server should change the association of the Floating IP
         # Create server so as to use for Multiple association
-        body = self.create_test_server(wait_until='ACTIVE')
+        body = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.new_server_id = body['id']
         self.addCleanup(self.servers_client.delete_server, self.new_server_id)
 

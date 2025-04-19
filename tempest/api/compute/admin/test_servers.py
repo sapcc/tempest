@@ -25,6 +25,8 @@ CONF = config.CONF
 class ServersAdminTestJSON(base.BaseV2ComputeAdminTest):
     """Tests Servers API using admin privileges"""
 
+    volume_backed = True
+
     @classmethod
     def setup_clients(cls):
         super(ServersAdminTestJSON, cls).setup_clients()
@@ -36,12 +38,12 @@ class ServersAdminTestJSON(base.BaseV2ComputeAdminTest):
         super(ServersAdminTestJSON, cls).resource_setup()
 
         cls.s1_name = data_utils.rand_name(cls.__name__ + '-server')
-        server = cls.create_test_server(name=cls.s1_name)
+        server = cls.create_test_server(name=cls.s1_name, volume_backed=True)
         cls.s1_id = server['id']
 
         cls.s2_name = data_utils.rand_name(cls.__name__ + '-server')
         server = cls.create_test_server(name=cls.s2_name,
-                                        wait_until='ACTIVE')
+                                        wait_until='ACTIVE', volume_backed=True)
         cls.s2_id = server['id']
         waiters.wait_for_server_status(cls.non_admin_client,
                                        cls.s1_id, 'ACTIVE')
@@ -209,7 +211,7 @@ class ServersAdminTestJSON(base.BaseV2ComputeAdminTest):
                 'The resetNetwork server action is not supported.')
 
         # Reset Network of a Server
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.client.reset_network(server['id'])
         # Inject the Network Info into Server
         self.client.inject_network_info(server['id'])
@@ -222,7 +224,8 @@ class ServersAdminTestJSON(base.BaseV2ComputeAdminTest):
             'same_host': self.s1_id
         }
         self.create_test_server(scheduler_hints=hints,
-                                wait_until='ACTIVE')
+                                wait_until='ACTIVE',
+                                volume_backed=True)
 
 
 class ServersAdmin275Test(base.BaseV2ComputeAdminTest):
@@ -232,6 +235,8 @@ class ServersAdmin275Test(base.BaseV2ComputeAdminTest):
     # for 2.75 microversion. No specific assert or behaviour verification
     # is needed.
     """
+
+    volume_backed = True
 
     min_microversion = '2.75'
 

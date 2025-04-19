@@ -21,6 +21,7 @@ from tempest.lib import decorators
 class ServerAddressesTestJSON(base.BaseV2ComputeTest):
     """Test server addresses"""
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -31,7 +32,7 @@ class ServerAddressesTestJSON(base.BaseV2ComputeTest):
     def resource_setup(cls):
         super(ServerAddressesTestJSON, cls).resource_setup()
 
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
     @decorators.attr(type='smoke')
     @decorators.idempotent_id('6eb718c0-02d9-4d5e-acd1-4e0c269cef39')

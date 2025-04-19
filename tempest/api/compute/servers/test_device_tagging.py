@@ -36,7 +36,7 @@ LOG = logging.getLogger(__name__)
 class DeviceTaggingBase(base.BaseV2ComputeTest):
 
     credentials = ['primary', 'admin']
-
+    volume_backed = True
     @classmethod
     def skip_checks(cls):
         super(DeviceTaggingBase, cls).skip_checks()
@@ -107,7 +107,7 @@ class DeviceTaggingBase(base.BaseV2ComputeTest):
 
 class TaggedBootDevicesTest(DeviceTaggingBase):
     """Test tagged boot device with compute microversion equals 2.32"""
-
+    volume_backed = True
     min_microversion = '2.32'
     # NOTE(mriedem): max_version looks odd but it's actually correct. Due to a
     # bug in the 2.32 microversion, tags on block devices only worked with the
@@ -274,7 +274,8 @@ class TaggedBootDevicesTest(DeviceTaggingBase):
                     'destination_type': 'volume',
                     'boot_index': 2
                 }
-            ])
+            ],
+            volume_backed=True)
 
         self.addCleanup(self.delete_server, server['id'])
 
@@ -322,7 +323,7 @@ class TaggedBootDevicesTest_v242(TaggedBootDevicesTest):
 
 class TaggedAttachmentsTest(DeviceTaggingBase):
     """Test tagged attachments with compute microversion greater than 2.48"""
-
+    volume_backed = True
     min_microversion = '2.49'
     max_microversion = 'latest'
 

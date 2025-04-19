@@ -27,6 +27,7 @@ CONF = config.CONF
 
 class ListServerFiltersTestJSON(base.BaseV2ComputeTest):
     """Test listing servers filtered by specified attribute"""
+    volume_backed = True
 
     @classmethod
     def setup_credentials(cls):
@@ -49,19 +50,20 @@ class ListServerFiltersTestJSON(base.BaseV2ComputeTest):
             cls.fixed_network_name = None
         network_kwargs = fixed_network.set_networks_kwarg(network)
         cls.s1_name = data_utils.rand_name(cls.__name__ + '-instance')
-        cls.s1 = cls.create_test_server(name=cls.s1_name, **network_kwargs)
+        cls.s1 = cls.create_test_server(name=cls.s1_name, volume_backed=True,  **network_kwargs)
 
         cls.s2_name = data_utils.rand_name(cls.__name__ + '-instance')
         # If image_ref_alt is "" or None then we still want to boot a server
         # but we rely on `testtools.skipUnless` decorator to actually skip
         # the irrelevant tests.
         cls.s2 = cls.create_test_server(
-            name=cls.s2_name, image_id=cls.image_ref_alt or cls.image_ref)
+            name=cls.s2_name, volume_backed=True, image_id=cls.image_ref_alt or cls.image_ref)
 
         cls.s3_name = data_utils.rand_name(cls.__name__ + '-instance')
         cls.s3 = cls.create_test_server(name=cls.s3_name,
                                         flavor=cls.flavor_ref_alt,
-                                        wait_until='ACTIVE')
+                                        wait_until='ACTIVE',
+                                        volume_backed=True)
 
         waiters.wait_for_server_status(cls.client, cls.s1['id'],
                                        'ACTIVE')

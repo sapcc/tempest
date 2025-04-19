@@ -37,7 +37,7 @@ class TestShelveInstance(manager.ScenarioTest):
        after a cold migrate
 
     """
-
+    volume_backed = True
     credentials = ['primary', 'admin']
 
     @classmethod

@@ -23,6 +23,7 @@ class ListServersNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of listing servers"""
 
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -37,7 +38,7 @@ class ListServersNegativeTestJSON(base.BaseV2ComputeTest):
         # by the test methods in this class. These
         # servers are cleaned up automatically in the
         # tearDownClass method of the super-class.
-        body = cls.create_test_server(wait_until='ACTIVE', min_count=3)
+        body = cls.create_test_server(wait_until='ACTIVE', min_count=3, volume_backed=True)
 
         # delete one of the created servers
         cls.deleted_id = body['server']['id']

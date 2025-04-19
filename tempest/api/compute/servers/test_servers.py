@@ -27,6 +27,7 @@ CONF = config.CONF
 class ServersTestJSON(base.BaseV2ComputeTest):
     """Test servers API"""
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -43,7 +44,8 @@ class ServersTestJSON(base.BaseV2ComputeTest):
         If an admin password is provided on server creation, the server's
         root password should be set to that password.
         """
-        server = self.create_test_server(adminPass='testpassword')
+        server = self.create_test_server(adminPass='testpassword',
+                                         volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
 
         # Verify the password is set correctly in the response
@@ -56,11 +58,13 @@ class ServersTestJSON(base.BaseV2ComputeTest):
         server_name = data_utils.rand_name(
             self.__class__.__name__ + '-server')
         server = self.create_test_server(name=server_name,
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         id1 = server['id']
         self.addCleanup(self.delete_server, id1)
         server = self.create_test_server(name=server_name,
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         id2 = server['id']
         self.addCleanup(self.delete_server, id2)
         self.assertNotEqual(id1, id2, "Did not create a new server")
@@ -78,7 +82,8 @@ class ServersTestJSON(base.BaseV2ComputeTest):
         self.addCleanup(self.keypairs_client.delete_keypair, key_name)
         self.keypairs_client.list_keypairs()
         server = self.create_test_server(key_name=key_name,
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
         server = self.client.show_server(server['id'])['server']
         self.assertEqual(key_name, server['key_name'])
@@ -100,7 +105,7 @@ class ServersTestJSON(base.BaseV2ComputeTest):
     @decorators.idempotent_id('5e6ccff8-349d-4852-a8b3-055df7988dd2')
     def test_update_server_name(self):
         """Test updating server name to the provided value"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
         # Update instance name with non-ASCII characters
         prefix_name = '\u00CD\u00F1st\u00E1\u00F1c\u00E9'
@@ -118,7 +123,7 @@ class ServersTestJSON(base.BaseV2ComputeTest):
     @decorators.idempotent_id('89b90870-bc13-4b73-96af-f9d4f2b70077')
     def test_update_access_server_address(self):
         """Test updating server's access addresses to the provided value"""
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
 
         # Update the IPv4 and IPv6 access addresses
@@ -136,7 +141,8 @@ class ServersTestJSON(base.BaseV2ComputeTest):
     def test_create_server_with_ipv6_addr_only(self):
         """Test creating server with ipv6 address only(no ipv4 address)"""
         server = self.create_test_server(accessIPv6='2001:2001::3',
-                                         wait_until='ACTIVE')
+                                         wait_until='ACTIVE',
+                                         volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
         server = self.client.show_server(server['id'])['server']
         self.assertEqual('2001:2001::3', server['accessIPv6'])
@@ -154,7 +160,9 @@ class ServersTestJSON(base.BaseV2ComputeTest):
         4 byte utf-8 character.
         """
         utf8_name = data_utils.rand_name(b'\xe2\x82\xa1'.decode('utf-8'))
-        self.create_test_server(name=utf8_name, wait_until='ACTIVE')
+        self.create_test_server(name=utf8_name,
+                                wait_until='ACTIVE',
+                                volume_backed=True)
 
 
 class ServerShowV247Test(base.BaseV2ComputeTest):
@@ -162,6 +170,7 @@ class ServerShowV247Test(base.BaseV2ComputeTest):
 
     min_microversion = '2.47'
     max_microversion = 'latest'
+    volume_backed = True
 
     # NOTE(gmann): This test tests the server APIs response schema
     # Along with 2.47 microversion schema this test class tests the
@@ -172,14 +181,14 @@ class ServerShowV247Test(base.BaseV2ComputeTest):
     @decorators.idempotent_id('88b0bdb2-494c-11e7-a919-92ebcb67fe33')
     def test_show_server(self):
         """Test getting server detail"""
-        server = self.create_test_server()
+        server = self.create_test_server(volume_backed=True)
         # All fields will be checked by API schema
         self.servers_client.show_server(server['id'])
 
     @decorators.idempotent_id('8de397c2-57d0-4b90-aa30-e5d668f21a8b')
     def test_update_rebuild_list_server(self):
         """Test update/rebuild/list server"""
-        server = self.create_test_server()
+        server = self.create_test_server(volume_backed=True)
         # Checking update API response schema
         self.servers_client.update_server(server['id'])
         waiters.wait_for_server_status(self.servers_client, server['id'],
@@ -197,6 +206,7 @@ class ServerShowV263Test(base.BaseV2ComputeTest):
 
     min_microversion = '2.63'
     max_microversion = 'latest'
+    volume_backed = True
 
     @testtools.skipUnless(CONF.compute.certified_image_ref,
                           '``[compute]/certified_image_ref`` required to test '
@@ -211,7 +221,8 @@ class ServerShowV263Test(base.BaseV2ComputeTest):
         server = self.create_test_server(
             image_id=CONF.compute.certified_image_ref,
             trusted_image_certificates=trusted_certs,
-            wait_until='ACTIVE')
+            wait_until='ACTIVE',
+            volume_backed=True)
 
         # Check show API response schema
         self.servers_client.show_server(server['id'])['server']

@@ -41,7 +41,7 @@ class FixedIPsTestJson(base.BaseV2ComputeAdminTest):
     @classmethod
     def resource_setup(cls):
         super(FixedIPsTestJson, cls).resource_setup()
-        server = cls.create_test_server(wait_until='ACTIVE')
+        server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         server = cls.servers_client.show_server(server['id'])['server']
         cls.ip = None
         for ip_set in server['addresses']:

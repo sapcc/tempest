@@ -33,6 +33,7 @@ class ServersNegativeTestJSON(base.BaseV2ComputeTest):
     """Negative tests of servers"""
 
     create_default_network = True
+    volume_backed = True
 
     def setUp(self):
         super(ServersNegativeTestJSON, self).setUp()
@@ -40,7 +41,7 @@ class ServersNegativeTestJSON(base.BaseV2ComputeTest):
             waiters.wait_for_server_status(self.client, self.server_id,
                                            'ACTIVE')
         except Exception:
-            self.__class__.server_id = self.recreate_server(self.server_id)
+            self.__class__.server_id = self.recreate_server(self.server_id, volume_backed=True)
 
     def tearDown(self):
         super(ServersNegativeTestJSON, self).tearDown()
@@ -57,11 +58,11 @@ class ServersNegativeTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServersNegativeTestJSON, cls).resource_setup()
-        server = cls.create_test_server(wait_until='ACTIVE')
+        server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.server_id = server['id']
 
         # Wait until the instance is active to avoid the delete racing
-        server = cls.create_test_server(wait_until='ACTIVE')
+        server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.client.delete_server(server['id'])
         waiters.wait_for_server_termination(cls.client, server['id'])
         cls.deleted_server_id = server['id']
@@ -586,7 +587,7 @@ class ServersNegativeTestMultiTenantJSON(base.BaseV2ComputeTest):
             waiters.wait_for_server_status(self.servers_client, self.server_id,
                                            'ACTIVE')
         except Exception:
-            self.__class__.server_id = self.recreate_server(self.server_id)
+            self.__class__.server_id = self.recreate_server(self.server_id, volume_backed=True)
 
     @classmethod
     def setup_clients(cls):
@@ -596,7 +597,7 @@ class ServersNegativeTestMultiTenantJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServersNegativeTestMultiTenantJSON, cls).resource_setup()
-        server = cls.create_test_server(wait_until='ACTIVE')
+        server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.server_id = server['id']
 
     @decorators.attr(type=['negative'])

@@ -23,7 +23,7 @@ class ServerTagsTestJSON(base.BaseV2ComputeTest):
 
     min_microversion = '2.26'
     max_microversion = 'latest'
-
+    volume_backed = True
     create_default_network = True
 
     @classmethod
@@ -34,7 +34,8 @@ class ServerTagsTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(ServerTagsTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE',
+                                            volume_backed=True)
 
     def _update_server_tags(self, server_id, tags):
         if not isinstance(tags, (list, tuple)):

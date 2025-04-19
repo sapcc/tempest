@@ -20,13 +20,14 @@ from tempest.lib import decorators
 
 class ServerPasswordTestJSON(base.BaseV2ComputeTest):
     """Test server password"""
-
+    volume_backed = True
     create_default_network = True
 
     @classmethod
     def resource_setup(cls):
         super(ServerPasswordTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until="ACTIVE")
+        cls.server = cls.create_test_server(wait_until="ACTIVE",
+                                            volume_backed=True)
 
     @decorators.idempotent_id('f83b582f-62a8-4f22-85b0-0dee50ff783a')
     def test_get_server_password(self):

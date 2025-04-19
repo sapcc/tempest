@@ -29,6 +29,7 @@ class NoVNCConsoleTestJSON(base.BaseV2ComputeTest):
     """Test novnc console"""
 
     create_default_network = True
+    volume_backed = True
 
     @classmethod
     def skip_checks(cls):
@@ -57,7 +58,7 @@ class NoVNCConsoleTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(NoVNCConsoleTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until="ACTIVE")
+        cls.server = cls.create_test_server(wait_until="ACTIVE", volume_backed=True)
         cls.use_get_remote_console = False
         if not cls.is_requested_microversion_compatible('2.5'):
             cls.use_get_remote_console = True

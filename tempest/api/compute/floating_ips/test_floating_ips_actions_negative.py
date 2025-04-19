@@ -69,7 +69,7 @@ class FloatingIPsAssociationNegativeTestJSON(base.BaseFloatingIPsTest):
     @classmethod
     def resource_setup(cls):
         super(FloatingIPsAssociationNegativeTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.server_id = cls.server['id']
 
     @decorators.attr(type=['negative'])

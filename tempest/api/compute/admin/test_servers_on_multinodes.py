@@ -25,10 +25,14 @@ CONF = config.CONF
 
 class ServersOnMultiNodesTest(base.BaseV2ComputeAdminTest):
     """Test creating servers on mutiple nodes with scheduler_hints."""
+
+    volume_backed = True
+
     @classmethod
     def resource_setup(cls):
         super(ServersOnMultiNodesTest, cls).resource_setup()
-        cls.server01 = cls.create_test_server(wait_until='ACTIVE')['id']
+        cls.server01 = cls.create_test_server(wait_until='ACTIVE',
+                                              volume_backed=True)['id']
         cls.host01 = cls.get_host_for_server(cls.server01)
 
     @classmethod
@@ -161,7 +165,7 @@ class UnshelveToHostMultiNodesTest(base.BaseV2ComputeAdminTest):
         3. Shelve offload server again.
         4. Request unshelve to the other host and verify server land on it.
         """
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         host = self.get_host_for_server(server['id'])
         otherhost = self.get_host_other_than(server['id'])
 

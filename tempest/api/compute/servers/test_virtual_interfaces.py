@@ -31,7 +31,7 @@ class VirtualInterfacesTestJSON(base.BaseV2ComputeTest):
     """Test virtual interfaces API with compute microversion less than 2.44"""
 
     max_microversion = '2.43'
-
+    volume_backed = True
     depends_on_nova_network = True
 
     create_default_network = True
@@ -44,7 +44,7 @@ class VirtualInterfacesTestJSON(base.BaseV2ComputeTest):
     @classmethod
     def resource_setup(cls):
         super(VirtualInterfacesTestJSON, cls).resource_setup()
-        cls.server = cls.create_test_server(wait_until='ACTIVE')
+        cls.server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
 
     @decorators.idempotent_id('96c4e2ef-5e4d-4d7f-87f5-fed6dca18016')
     @utils.services('network')

@@ -33,7 +33,7 @@ class ServersTestJSON(base.BaseV2ComputeTest):
     """
 
     disk_config = 'AUTO'
-    volume_backed = False
+    volume_backed = True
 
     @classmethod
     def setup_credentials(cls):
@@ -157,7 +157,7 @@ class ServersTestManualDisk(ServersTestJSON):
     This is to create server booted from image and with disk_config 'MANUAL'
     """
     disk_config = 'MANUAL'
-
+    volume_backed = True
     @classmethod
     def skip_checks(cls):
         super(ServersTestManualDisk, cls).skip_checks()
@@ -188,6 +188,7 @@ class ServersTestFqdnHostnames(base.BaseV2ComputeTest):
     Starting Wallaby release, Nova sanitizes freeform characters in
     server hostname with dashes. This test verifies the same.
     """
+    volume_backed = True
 
     @classmethod
     def setup_credentials(cls):
@@ -218,7 +219,8 @@ class ServersTestFqdnHostnames(base.BaseV2ComputeTest):
             wait_until='ACTIVE',
             adminPass=self.password,
             name=self.server_name,
-            accessIPv4=self.accessIPv4)
+            accessIPv4=self.accessIPv4,
+            volume_backed=True)
 
         """Verify the hostname within the instance is sanitized
 

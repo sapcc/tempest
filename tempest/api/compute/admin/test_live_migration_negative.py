@@ -44,7 +44,7 @@ class LiveMigrationNegativeTest(base.BaseV2ComputeAdminTest):
     def test_invalid_host_for_migration(self):
         """Test migrating to an invalid host should not change the status"""
         target_host = data_utils.rand_name('host')
-        server = self.create_test_server(wait_until="ACTIVE")
+        server = self.create_test_server(wait_until="ACTIVE", volume_backed=True)
 
         self.assertRaises(lib_exc.BadRequest, self._migrate_server_to,
                           server['id'], target_host)
@@ -55,7 +55,7 @@ class LiveMigrationNegativeTest(base.BaseV2ComputeAdminTest):
     @decorators.idempotent_id('6e2f94f5-2ee8-4830-bef5-5bc95bb0795b')
     def test_live_block_migration_suspended(self):
         """Test migrating a suspended server should not change the status"""
-        server = self.create_test_server(wait_until="ACTIVE")
+        server = self.create_test_server(wait_until="ACTIVE", volume_backed=True)
 
         self.admin_servers_client.suspend_server(server['id'])
         waiters.wait_for_server_status(self.servers_client,

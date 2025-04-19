@@ -26,6 +26,8 @@ CONF = config.CONF
 class ServersTestMultiNic(base.BaseV2ComputeTest):
     """Test multiple networks in servers"""
 
+    volume_backed = True
+
     @classmethod
     def skip_checks(cls):
         super(ServersTestMultiNic, cls).skip_checks()
@@ -72,7 +74,7 @@ class ServersTestMultiNic(base.BaseV2ComputeTest):
                     {'uuid': net2['network']['id']}]
 
         server_multi_nics = self.create_test_server(
-            networks=networks, wait_until='ACTIVE')
+            networks=networks, wait_until='ACTIVE', volume_backed=True)
 
         # Cleanup server; this is needed in the test case because with the LIFO
         # nature of the cleanups, if we don't delete the server first, the port
@@ -115,7 +117,7 @@ class ServersTestMultiNic(base.BaseV2ComputeTest):
                     {'uuid': net1['network']['id']}]
 
         server_multi_nics = self.create_test_server(
-            networks=networks, wait_until='ACTIVE')
+            networks=networks, wait_until='ACTIVE', volume_backed=True)
         self.addCleanup(self.delete_server, server_multi_nics['id'])
 
         addresses = (self.client.list_addresses(server_multi_nics['id'])

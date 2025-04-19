@@ -43,7 +43,7 @@ class VolumesAdminNegativeTest(base.BaseV2ComputeAdminTest):
     @decorators.idempotent_id('309b5ecd-0585-4a7e-a36f-d2b2bf55259d')
     def test_update_attached_volume_with_nonexistent_volume_in_uri(self):
         """Test swapping non existent volume should fail"""
-        self.server = self.create_test_server(wait_until="ACTIVE")
+        self.server = self.create_test_server(wait_until="ACTIVE", volume_backed=True)
         volume = self.create_volume()
         nonexistent_volume = data_utils.rand_uuid()
         self.assertRaises(lib_exc.NotFound,
@@ -65,7 +65,8 @@ class VolumesAdminNegativeTest(base.BaseV2ComputeAdminTest):
         self.server = self.create_test_server(
             validatable=True,
             validation_resources=validation_resources,
-            wait_until="SSHABLE")
+            wait_until="SSHABLE",
+            volume_backed=True)
 
         volume = self.create_volume()
         self.attach_volume(self.server, volume)
@@ -128,12 +129,14 @@ class UpdateMultiattachVolumeNegativeTest(base.BaseV2ComputeAdminTest):
         server1 = self.create_test_server(
             validatable=True,
             validation_resources=validation_resources,
-            wait_until='SSHABLE'
+            wait_until='SSHABLE',
+            volume_backed=True
         )
         server2 = self.create_test_server(
             validatable=True,
             validation_resources=validation_resources,
-            wait_until='SSHABLE'
+            wait_until='SSHABLE',
+            volume_backed=True
         )
 
         # Attach vol1 to both of these instances.

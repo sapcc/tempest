@@ -50,7 +50,8 @@ class BaseAttachVolumeTest(base.BaseV2ComputeTest):
             validatable=True,
             validation_resources=validation_resources,
             wait_until='SSHABLE',
-            adminPass=self.image_ssh_password)
+            adminPass=self.image_ssh_password,
+            volume_backed=True)
         self.addCleanup(self.delete_server, server['id'])
         # Record addresses so that we can ssh later
         server['addresses'] = self.servers_client.list_addresses(

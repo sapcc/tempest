@@ -27,6 +27,7 @@ CONF = config.CONF
 
 class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
     """Negative Tests of Servers API using admin privileges"""
+    volume_backed = True
 
     @classmethod
     def setup_clients(cls):
@@ -39,7 +40,7 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
         super(ServersAdminNegativeTestJSON, cls).resource_setup()
         cls.tenant_id = cls.client.tenant_id
 
-        server = cls.create_test_server(wait_until='ACTIVE')
+        server = cls.create_test_server(wait_until='ACTIVE', volume_backed=True)
         cls.s1_id = server['id']
 
     @decorators.idempotent_id('28dcec23-f807-49da-822c-56a92ea3c687')
@@ -128,7 +129,7 @@ class ServersAdminNegativeTestJSON(base.BaseV2ComputeAdminTest):
     def test_migrate_server_invalid_state(self):
         """Test migrating a server with invalid state should fail"""
         # create server.
-        server = self.create_test_server(wait_until='ACTIVE')
+        server = self.create_test_server(wait_until='ACTIVE', volume_backed=True)
         server_id = server['id']
         # suspend the server.
         self.client.suspend_server(server_id)
