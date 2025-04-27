@@ -47,7 +47,7 @@ class ServersWithSpecificFlavorTestJSON(base.BaseV2ComputeAdminTest):
     def test_verify_created_server_ephemeral_disk(self):
         """Verify that the ephemeral disk is created when creating server"""
         flavor_base = self.flavors_client.show_flavor(
-            self.flavor_ref)['flavor']
+            self.kvm_flavor_disk)['flavor']
 
         def create_flavor_with_ephemeral(ephem_disk):
             name = 'flavor_with_ephemeral_%s' % ephem_disk

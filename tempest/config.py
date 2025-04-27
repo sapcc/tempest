@@ -312,6 +312,8 @@ ComputeGroup = [
     cfg.StrOpt('flavor_ref_alt',
                default="2",
                help='Valid secondary flavor to be used in tests.'),
+    cfg.StrOpt('ccloud_compute_kvm_flavor_disk_ref',
+                help='Ccloud KVM flavor with disk'),
     cfg.IntOpt('build_interval',
                default=1,
                help="Time in seconds between build status checks."),

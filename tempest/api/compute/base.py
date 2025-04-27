@@ -182,6 +182,7 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         cls.image_alt_ssh_user = CONF.validation.image_alt_ssh_user
         cls.image_ssh_password = CONF.validation.image_ssh_password
         cls.image_alt_ssh_password = CONF.validation.image_alt_ssh_password
+        cls.kvm_flavor_disk = CONF.compute.ccloud_compute_kvm_flavor_disk_ref
 
     @classmethod
     def is_requested_microversion_compatible(cls, max_version):
