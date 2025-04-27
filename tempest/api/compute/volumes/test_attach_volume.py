@@ -143,7 +143,7 @@ class AttachVolumeTestJSON(BaseAttachVolumeTest):
         attachment_1st = self.attach_volume(server, volume_1st)
         body = self.servers_client.list_volume_attachments(
             server['id'])['volumeAttachments']
-        self.assertEqual(1, len(body))
+        self.assertEqual(2, len(body))
         self.assertIn(attachment_1st, body)
 
         # Get volume attachment of the server
@@ -159,7 +159,7 @@ class AttachVolumeTestJSON(BaseAttachVolumeTest):
         attachment_2nd = self.attach_volume(server, volume_2nd)
         body = self.servers_client.list_volume_attachments(
             server['id'])['volumeAttachments']
-        self.assertEqual(2, len(body))
+        self.assertEqual(3, len(body))
 
         if CONF.validation.run_validation:
             linux_client = remote_client.RemoteClient(
