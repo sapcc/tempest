@@ -973,9 +973,13 @@ class ScenarioTest(tempest.test.BaseTestCase):
 
         if ip_addr and not kwargs.get('fixed_ips'):
             kwargs['fixed_ips'] = 'ip_address=%s' % ip_addr
-        ports = self.os_admin.ports_client.list_ports(
-            device_id=server['id'], **kwargs)['ports']
 
+        # ports = self.os_admin.ports_client.list_ports(
+        #     device_id=server['id'], **kwargs)['ports']
+        ports = waiters.wait_for_server_ports(
+            self.ports_client,
+            device_id=server["id"], interval=1,
+            **kwargs)
         # A port can have more than one IP address in some cases.
         # If the network is dual-stack (IPv4 + IPv6), this port is associated
         # with 2 subnets

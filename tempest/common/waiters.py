@@ -646,3 +646,18 @@ def wait_for_object_create(object_client, container_name, object_name,
     message = ('Object %s failed to create within the required time (%s s).' %
                (object_name, object_client.build_timeout))
     raise lib_exc.TimeoutException(message)
+
+
+def wait_for_server_ports(client, device_id, interval=1, **kwargs):
+    """Waits for created object to become available"""
+    start_time = time.time()
+    while time.time() - start_time < client.build_timeout:
+        ports = client.list_ports(device_id=device_id, **kwargs)['ports']
+        if ports:
+            return ports
+        else:
+            time.sleep(interval)
+    message = ('Port not found for server %s within the required time (%s s).' %
+               (device_id, client.build_timeout))
+    LOG.error(message)
+    return ports
