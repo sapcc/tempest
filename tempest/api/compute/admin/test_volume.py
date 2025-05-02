@@ -112,7 +112,7 @@ class AttachSCSIVolumeTestJSON(BaseAttachSCSIVolumeTest):
             validatable=True,
             validation_resources=validation_resources,
             wait_until="SSHABLE",
-            volume_backed=True)
+            flavor=CONF.compute.ccloud_compute_kvm_flavor_disk_ref)
         # NOTE(lyarwood): self.create_test_server delete the server
         # at class level cleanup so add server cleanup to ensure that
         # the instance is deleted first before created image. This
