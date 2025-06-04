@@ -10,8 +10,12 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+from oslo_log import log as logging
+
 from tempest.api.image import base
 from tempest.lib import decorators
+
+LOG = logging.getLogger(__name__)
 
 
 class ImagesMemberTest(base.BaseV2MemberImageTest):
@@ -20,6 +24,13 @@ class ImagesMemberTest(base.BaseV2MemberImageTest):
     @decorators.idempotent_id('5934c6ea-27dc-4d6e-9421-eeb5e045494a')
     def test_image_share_accept(self):
         """Test sharing and accepting an image"""
+        LOG.debug(self.client.project_id)
+        LOG.debug(self.client.user)
+        LOG.debug(self.client.user_id)
+        LOG.debug(self.alt_img_client.project_id)
+        LOG.debug(self.alt_tenant_id)
+        LOG.debug(self.alt_img_client.user)
+        LOG.debug(self.alt_img_client.user_id)
         image_id = self._create_image()
         member = self.image_member_client.create_image_member(
             image_id, member=self.alt_tenant_id)

@@ -174,7 +174,7 @@ class BaseV2MemberImageTest(BaseV2ImageTest):
     @classmethod
     def resource_setup(cls):
         super(BaseV2MemberImageTest, cls).resource_setup()
-        cls.alt_tenant_id = cls.alt_image_member_client.tenant_id
+        cls.alt_tenant_id = cls.alt_image_member_client.project_id
 
     def _list_image_ids_as_alt(self):
         image_list = self.alt_img_client.list_images()['images']
