@@ -472,7 +472,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         server = self.client.show_server(self.server_id)['server']
         self.assert_flavor_equal(self.flavor_ref, server['flavor'])
         attached_volumes = server['os-extended-volumes:volumes_attached']
-        self.assertEqual(1, len(attached_volumes))
+        self.assertEqual(2, len(attached_volumes))
         self.assertEqual(volume['id'], attached_volumes[0]['id'])
 
     @decorators.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
