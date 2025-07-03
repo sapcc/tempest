@@ -178,7 +178,7 @@ class BaseV2MemberImageTest(BaseV2ImageTest):
 
     def _list_image_ids_as_alt(self):
         image_list = self.alt_img_client.list_images()['images']
-        image_ids = map(lambda x: x['id'], image_list)
+        return [image['id'] for image in image_list]
         return image_ids
 
     def _create_image(self):
