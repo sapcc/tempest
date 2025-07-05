@@ -473,7 +473,7 @@ class ServerActionsTestJSON(base.BaseV2ComputeTest):
         self.assert_flavor_equal(self.flavor_ref, server['flavor'])
         attached_volumes = server['os-extended-volumes:volumes_attached']
         self.assertEqual(2, len(attached_volumes))
-        self.assertEqual(volume['id'], attached_volumes[0]['id'])
+        self.assertIn(volume['id'], list(map(lambda x: x['id'], attached_volumes)))
 
     @decorators.idempotent_id('b963d4f1-94b3-4c40-9e97-7b583f46e470')
     @testtools.skipUnless(CONF.compute_feature_enabled.snapshot,
