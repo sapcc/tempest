@@ -119,6 +119,23 @@ get_limit = {
                                              'totalInstancesUsed': {'type': 'integer'}},
                         'zh2mlx1.xlarge': {'maxTotalInstances': {'type': 'integer'},
                                            'totalInstancesUsed': {'type': 'integer'}}},
+                    'absolutePerHwVersion':
+                        {'2101': {
+                            'maxTotalCores': {'type': 'integer'},
+                            'maxTotalRAMSize': {'type': 'integer'},
+                            'totalCoresUsed': {'type': 'integer'},
+                            'totalRAMUsed': {'type': 'integer'}
+                        },'2152': {'maxTotalCores': {'type': 'integer'},
+                                   'maxTotalRAMSize': {'type': 'integer'},
+                                   'totalCoresUsed': {'type': 'integer'},
+                                   'totalRAMUsed': {'type': 'integer'}
+                                   },
+                              '2153': {
+                                  'maxTotalCores': {'type': 'integer'},
+                                  'maxTotalRAMSize': {'type': 'integer'},
+                                  'totalCoresUsed': {'type': 'integer'},
+                                  'totalRAMUsed': {'type': 'integer'}}
+                        },
                     'rate': {
                         'type': 'array',
                         'items': {
