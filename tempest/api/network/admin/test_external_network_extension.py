@@ -77,7 +77,9 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         # List networks as a normal user and confirm the external
         # network extension attribute is returned for those networks
         # that were created as external
-        body = self.admin_networks_client.list_networks()
+        body = self.admin_networks_client.list_networks(
+            project_id=self.admin_networks_client.tenant_id
+        )
         networks_list = [net['id'] for net in body['networks']]
         self.assertIn(external_network['id'], networks_list)
         self.assertIn(self.network['id'], networks_list)
@@ -132,21 +134,28 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
                         created_floating_ip['id'])
         if utils.is_extension_enabled('filter-validation', 'network'):
             floatingip_list = self.admin_floating_ips_client.list_floatingips(
-                floating_network_id=external_network['id'])
+                floating_network_id=external_network['id'],
+                project_id=self.admin_floating_ips_client.tenant_id
+            )
         else:
             # NOTE(hongbin): This is for testing the backward-compatibility
             # of neutron API although the parameter is a wrong filter
             # for listing floating IPs.
             floatingip_list = self.admin_floating_ips_client.list_floatingips(
-                invalid_filter=external_network['id'])
+                invalid_filter=external_network['id'],
+                project_id=self.admin_floating_ips_client.tenant_id)
         self.assertIn(created_floating_ip['id'],
                       (f['id'] for f in floatingip_list['floatingips']))
         self.admin_networks_client.delete_network(external_network['id'])
         # Verifies floating ip is deleted
-        floatingip_list = self.admin_floating_ips_client.list_floatingips()
+        floatingip_list = self.admin_floating_ips_client.list_floatingips(
+            project_id=self.admin_floating_ips_client.tenant_id
+        )
         self.assertNotIn(created_floating_ip['id'],
                          (f['id'] for f in floatingip_list['floatingips']))
         # Verifies subnet is deleted
-        subnet_list = self.admin_subnets_client.list_subnets()
+        subnet_list = self.admin_subnets_client.list_subnets(
+            project_id=self.admin_floating_ips_client.tenant_id
+        )
         self.assertNotIn(subnet['id'],
                          (s['id'] for s in subnet_list))
