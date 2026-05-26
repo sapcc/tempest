@@ -78,15 +78,19 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         # network extension attribute is returned for those networks
         # that were created as external
         body = self.admin_networks_client.list_networks(
-            project_id=self.admin_networks_client.tenant_id
-        )
+            project_id=self.admin_networks_client.tenant_id)
         networks_list = [net['id'] for net in body['networks']]
         self.assertIn(external_network['id'], networks_list)
+
+        body = self.admin_networks_client.list_networks(id=self.network['id'])
+        networks_list = [net['id'] for net in body['networks']]
         self.assertIn(self.network['id'], networks_list)
         for net in body['networks']:
             if net['id'] == self.network['id']:
                 self.assertFalse(net['router:external'])
-            elif net['id'] == external_network['id']:
+        body = self.admin_networks_client.list_networks(id=external_network['id'])
+        for net in body['networks']:
+            if net['id'] == external_network['id']:
                 self.assertTrue(net['router:external'])
 
     @decorators.idempotent_id('2ac50ab2-7ebd-4e27-b3ce-a9e399faaea2')
