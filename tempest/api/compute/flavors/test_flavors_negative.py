@@ -73,3 +73,21 @@ class FlavorsV2NegativeTest(base.BaseV2ComputeTest):
                           self.create_test_server,
                           image_id=image['id'],
                           flavor=flavor['id'])
+
+
+class FlavorPermissionsV2NegativeTest(base.BaseV2ComputeTest):
+
+    min_microversion = '2.100'
+
+    @decorators.attr(type=['negative'])
+    @decorators.idempotent_id('97f91e41-ef1c-438e-82c8-15463bcfc035')
+    def test_flavor_filter_param_unauthorized(self):
+        """Listing with permission filter raises Forbidden"""
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.flavors_client.list_flavors,
+            detail=True, domain_permission='allow')
+        self.assertRaises(
+            lib_exc.Forbidden,
+            self.flavors_client.list_flavors,
+            detail=True, project_permission='allow')

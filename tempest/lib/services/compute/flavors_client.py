@@ -26,6 +26,8 @@ from tempest.lib.api_schema.response.compute.v2_55 import flavors \
     as schemav255
 from tempest.lib.api_schema.response.compute.v2_61 import flavors \
     as schemav261
+from tempest.lib.api_schema.response.compute.v2_100 import flavors \
+    as schemav2100
 from tempest.lib.common import rest_client
 from tempest.lib.services.compute import base_compute_client
 
@@ -35,7 +37,8 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
     schema_versions_info = [
         {'min': None, 'max': '2.54', 'schema': schema},
         {'min': '2.55', 'max': '2.60', 'schema': schemav255},
-        {'min': '2.61', 'max': None, 'schema': schemav261}]
+        {'min': '2.61', 'max': '2.99', 'schema': schemav261},
+        {'min': '2.100', 'max': None, 'schema': schemav2100}]
 
     def list_flavors(self, detail=False, **params):
         """Lists flavors.
@@ -70,7 +73,7 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
         resp, body = self.get("flavors/%s" % flavor_id)
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.show_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 
@@ -91,7 +94,7 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
 
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.create_update_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 
@@ -107,7 +110,7 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
 
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.create_update_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 
