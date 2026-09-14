@@ -25,6 +25,8 @@ from tempest.lib.services.compute.certificates_client import \
 from tempest.lib.services.compute.extensions_client import \
     ExtensionsClient
 from tempest.lib.services.compute.fixed_ips_client import FixedIPsClient
+from tempest.lib.services.compute.flavor_permission_rules_client import \
+    FlavorPermissionRulesClient
 from tempest.lib.services.compute.flavors_client import FlavorsClient
 from tempest.lib.services.compute.floating_ip_pools_client import \
     FloatingIPPoolsClient
@@ -78,3 +80,6 @@ __all__ = ['AgentsClient', 'AggregatesClient', 'AssistedVolumeSnapshotsClient',
            'ServerGroupsClient', 'ServersClient', 'ServicesClient',
            'SnapshotsClient', 'TenantNetworksClient', 'TenantUsagesClient',
            'VersionsClient', 'VolumesClient']
+
+# separated SAP additions to reduce merge conflicts with upstream
+__all__ += ['FlavorPermissionRulesClient']
