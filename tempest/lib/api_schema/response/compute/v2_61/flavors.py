@@ -14,6 +14,7 @@
 
 import copy
 
+from tempest.lib.api_schema.response.compute.v2_1 import flavors as flavorsv21
 from tempest.lib.api_schema.response.compute.v2_1 import parameter_types
 from tempest.lib.api_schema.response.compute.v2_55 import flavors \
     as flavorsv255
@@ -56,7 +57,7 @@ common_flavor_info = {
         'rxtx_factor': {'type': 'number'},
         'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
         'description': flavor_description,
-        'extra_specs': flavor_extra_specs
+        'extra_specs': flavor_extra_specs,
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and
@@ -65,6 +66,10 @@ common_flavor_info = {
                  'description']
 }
 
+common_flavor_info_with_permissions = copy.deepcopy(common_flavor_info)
+common_flavor_info_with_permissions['properties']['permissions'] = (
+    flavorsv21.flavor_permissions)
+
 list_flavors_details = {
     'status_code': [200],
     'response_body': {
@@ -72,7 +77,7 @@ list_flavors_details = {
         'properties': {
             'flavors': {
                 'type': 'array',
-                'items': common_flavor_info
+                'items': common_flavor_info_with_permissions
             },
             # NOTE(gmann): flavors_links attribute is not necessary
             # to be present always so it is not 'required'.
@@ -83,7 +88,7 @@ list_flavors_details = {
     }
 }
 
-create_update_get_flavor_details = {
+create_update_flavor_details = {
     'status_code': [200],
     'response_body': {
         'type': 'object',
@@ -94,6 +99,10 @@ create_update_get_flavor_details = {
         'required': ['flavor']
     }
 }
+
+show_flavor_details = copy.deepcopy(create_update_flavor_details)
+show_flavor_details['response_body']['properties'][
+    'flavor'] = common_flavor_info_with_permissions
 
 # ****** Schemas unchanged in microversion 2.61 since microversion 2.55 ***
 # Note(gmann): Below are the unchanged schema in this microversion. We need

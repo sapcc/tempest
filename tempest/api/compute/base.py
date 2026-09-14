@@ -77,6 +77,8 @@ class BaseV2ComputeTest(api_version_utils.BaseMicroversionTest,
         cls.servers_client = cls.os_primary.servers_client
         cls.server_groups_client = cls.os_primary.server_groups_client
         cls.flavors_client = cls.os_primary.flavors_client
+        cls.flavor_permission_rules_client = (
+            cls.os_primary.flavor_permission_rules_client)
         cls.compute_images_client = cls.os_primary.compute_images_client
         cls.extensions_client = cls.os_primary.extensions_client
         cls.floating_ip_pools_client = cls.os_primary.floating_ip_pools_client
@@ -668,6 +670,8 @@ class BaseV2ComputeAdminTest(BaseV2ComputeTest):
         cls.availability_zone_admin_client = (
             cls.os_admin.availability_zone_client)
         cls.admin_flavors_client = cls.os_admin.flavors_client
+        cls.admin_flavor_permission_rules_client = (
+            cls.os_admin.flavor_permission_rules_client)
         cls.admin_servers_client = cls.os_admin.servers_client
         cls.admin_image_client = cls.os_admin.image_client_v2
         cls.admin_assisted_volume_snapshots_client = \
@@ -685,6 +689,48 @@ class BaseV2ComputeAdminTest(BaseV2ComputeTest):
         self.addCleanup(client.wait_for_resource_deletion, flavor['id'])
         self.addCleanup(client.delete_flavor, flavor['id'])
         return flavor
+
+    @classmethod
+    def _create_flavor_permission_rule(
+            cls, domain_id, effect, project_id, flavor_id):
+        kwargs = {}
+        if project_id is not None:
+            kwargs['project_id'] = project_id
+        if flavor_id is not None:
+            kwargs['flavor_id'] = flavor_id
+        client = cls.admin_flavor_permission_rules_client
+        return client.create_flavor_permission_rule(
+            domain_id=domain_id, effect=effect,
+            **kwargs)['flavor_permission_rule']
+
+    def create_flavor_permission_rule(
+            self, domain_id, effect, project_id=None, flavor_id=None):
+        """Create a flavor permission rule with test-level cleanup"""
+        rule = self._create_flavor_permission_rule(
+            domain_id=domain_id, effect=effect, project_id=project_id,
+            flavor_id=flavor_id)
+        # Deletion is synchronous (204), so wait_for_resource_deletion is not
+        # needed
+        client = self.admin_flavor_permission_rules_client
+        self.addCleanup(
+            test_utils.call_and_ignore_notfound_exc,
+            client.delete_flavor_permission_rule, rule['id'])
+        return rule
+
+    @classmethod
+    def create_flavor_permission_rule_resource(
+            cls, domain_id, effect, project_id=None, flavor_id=None):
+        """Create a flavor permission rule with class-level cleanup"""
+        rule = cls._create_flavor_permission_rule(
+            domain_id=domain_id, effect=effect, project_id=project_id,
+            flavor_id=flavor_id)
+        client = cls.admin_flavor_permission_rules_client
+        # Deletion is synchronous (204), so wait_for_resource_deletion is not
+        # needed
+        cls.addClassResourceCleanup(
+            test_utils.call_and_ignore_notfound_exc,
+            client.delete_flavor_permission_rule, rule['id'])
+        return rule
 
     @classmethod
     def get_host_for_server(cls, server_id):
