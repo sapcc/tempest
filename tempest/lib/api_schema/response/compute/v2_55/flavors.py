@@ -74,7 +74,8 @@ common_flavor_info = {
         'os-flavor-access:is_public': {'type': 'boolean'},
         'rxtx_factor': {'type': 'number'},
         'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
-        'description': flavor_description
+        'description': flavor_description,
+        'permissions': flavorsv21.flavor_permissions
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and

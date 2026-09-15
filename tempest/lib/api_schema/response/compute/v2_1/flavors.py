@@ -14,6 +14,19 @@
 
 from tempest.lib.api_schema.response.compute.v2_1 import parameter_types
 
+# SAP flavor permission rules annotation, emitted on flavor detail/show for
+# callers holding the os-flavor-permission-rules index:domain / index:project
+# policy. The key is present (possibly empty) for such callers, absent
+# otherwise, so it is optional here.
+flavor_permissions = {
+    'type': 'object',
+    'properties': {
+        'domain': {'type': 'string', 'enum': ['allow', 'deny']},
+        'project': {'type': 'string', 'enum': ['allow', 'deny']},
+    },
+    'additionalProperties': False,
+}
+
 list_flavors = {
     'status_code': [200],
     'response_body': {
@@ -56,7 +69,8 @@ common_flavor_info = {
         'OS-FLV-DISABLED:disabled': {'type': 'boolean'},
         'os-flavor-access:is_public': {'type': 'boolean'},
         'rxtx_factor': {'type': 'number'},
-        'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'}
+        'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
+        'permissions': flavor_permissions
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and

@@ -14,6 +14,7 @@
 
 import copy
 
+from tempest.lib.api_schema.response.compute.v2_1 import flavors as flavorsv21
 from tempest.lib.api_schema.response.compute.v2_1 import parameter_types
 from tempest.lib.api_schema.response.compute.v2_55 import flavors \
     as flavorsv255
@@ -56,7 +57,8 @@ common_flavor_info = {
         'rxtx_factor': {'type': 'number'},
         'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
         'description': flavor_description,
-        'extra_specs': flavor_extra_specs
+        'extra_specs': flavor_extra_specs,
+        'permissions': flavorsv21.flavor_permissions
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and

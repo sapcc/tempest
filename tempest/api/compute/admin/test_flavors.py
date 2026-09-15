@@ -232,3 +232,64 @@ class FlavorsAdminTestJSON(base.BaseV2ComputeAdminTest):
                                     id=new_flavor_id)
         self.assertEqual(flavor['ram'], int(ram))
         self.assertEqual(int(flavor['id']), new_flavor_id)
+
+    @decorators.idempotent_id('56ca1d2d-c430-4431-a046-09368029a648')
+    def test_list_flavor_permission_filter(self):
+        """Test filtering flavor list by permissions"""
+        domain_id = self.os_admin.credentials.project_domain_id
+        project_id = self.os_admin.credentials.project_id
+        flavor = self.create_flavor(ram=self.ram, vcpus=self.vcpus,
+                                    disk=self.disk, is_public='True')
+        # Deny flavor at project scope
+        self.create_flavor_permission_rule(
+            domain_id=domain_id, project_id=project_id,
+            effect='deny', flavor_id=flavor['id'])
+        # Flavor appears in the list of denied flavors
+        denied = self.admin_flavors_client.list_flavors(
+            detail=True, project_permission='deny')['flavors']
+        self.assertIn(flavor['id'], {f['id'] for f in denied})
+        # Flavor is not in the list of allowed flavors
+        allowed = self.admin_flavors_client.list_flavors(
+            detail=True, project_permission='allow')['flavors']
+        self.assertNotIn(flavor['id'], {f['id'] for f in allowed})
+
+    @decorators.idempotent_id('a90933ae-cfb3-4d7a-a3cc-59b89cf0f605')
+    def test_show_list_flavor_permissions_annotation(self):
+        """Test showing and listing permissions annotation"""
+        domain_id = self.os_admin.credentials.project_domain_id
+        project_id = self.os_admin.credentials.project_id
+        flavor = self.create_flavor(ram=self.ram, vcpus=self.vcpus,
+                                    disk=self.disk, is_public='True')
+        # Show reflects default 'allow' permissions
+        shown = self.admin_flavors_client.show_flavor(flavor['id'])['flavor']
+        self.assertIn('permissions', shown)
+        self.assertEqual('allow', shown['permissions']['project'])
+        self.assertEqual('allow', shown['permissions']['domain'])
+        # Show reflects project 'deny' rule
+        self.create_flavor_permission_rule(
+            domain_id=domain_id, project_id=project_id,
+            effect='deny', flavor_id=flavor['id'])
+        shown = self.admin_flavors_client.show_flavor(flavor['id'])['flavor']
+        self.assertEqual('deny', shown['permissions']['project'])
+        self.assertEqual('allow', shown['permissions']['domain'])
+        # Details reflect project 'deny' rule
+        detailed = self.admin_flavors_client.list_flavors(
+            detail=True)['flavors']
+        detailed = [f for f in detailed if f['id'] == flavor['id']]
+        self.assertEqual(1, len(detailed))
+        self.assertEqual('deny', detailed[0]['permissions']['project'])
+
+    @decorators.idempotent_id('d4e5fa02-004e-4b3e-8705-22b65e460ab9')
+    def test_show_list_denied_flavor_non_admin(self):
+        """Deny rules hide flavors from list and show for regular users"""
+        flavor = self.create_flavor(ram=self.ram, vcpus=self.vcpus,
+                                    disk=self.disk, is_public='True')
+        self.create_flavor_permission_rule(
+            domain_id=self.os_primary.credentials.project_domain_id,
+            project_id=self.os_primary.credentials.project_id,
+            effect='deny', flavor_id=flavor['id'])
+        flavor_ids = {f['id'] for f in self.flavors_client.list_flavors(
+            detail=True)['flavors']}
+        self.assertNotIn(flavor['id'], flavor_ids)
+        self.assertRaises(lib_exc.NotFound,
+                          self.flavors_client.show_flavor, flavor['id'])
