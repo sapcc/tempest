@@ -14,6 +14,7 @@
 
 import copy
 
+from tempest.lib.api_schema.response.compute.v2_1 import flavors as flavorsv21
 from tempest.lib.api_schema.response.compute.v2_1 import parameter_types
 from tempest.lib.api_schema.response.compute.v2_55 import flavors \
     as flavorsv255
@@ -56,7 +57,7 @@ common_flavor_info = {
         'rxtx_factor': {'type': 'number'},
         'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
         'description': flavor_description,
-        'extra_specs': flavor_extra_specs
+        'extra_specs': flavor_extra_specs,
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and
@@ -83,7 +84,7 @@ list_flavors_details = {
     }
 }
 
-create_update_get_flavor_details = {
+create_update_flavor_details = {
     'status_code': [200],
     'response_body': {
         'type': 'object',
@@ -94,6 +95,8 @@ create_update_get_flavor_details = {
         'required': ['flavor']
     }
 }
+
+show_flavor_details = create_update_flavor_details
 
 # ****** Schemas unchanged in microversion 2.61 since microversion 2.55 ***
 # Note(gmann): Below are the unchanged schema in this microversion. We need
