@@ -121,8 +121,7 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         Verifies external network can be deleted while still holding
         (unassociated) floating IPs
         """
-        body = self.admin_networks_client.create_network(
-            **{'router:external': True})
+        body = self.admin_networks_client.create_network()
         external_network = body['network']
         self.addCleanup(test_utils.call_and_ignore_notfound_exc,
                         self.admin_networks_client.delete_network,
@@ -130,6 +129,8 @@ class ExternalNetworksTestJSON(base.BaseAdminNetworkTest):
         subnet = self.create_subnet(
             external_network, client=self.admin_subnets_client,
             enable_dhcp=False)
+        self.admin_networks_client.update_network(
+            external_network['id'], **{'router:external': True})
         body = self.admin_floating_ips_client.create_floatingip(
             floating_network_id=external_network['id'])
         created_floating_ip = body['floatingip']
