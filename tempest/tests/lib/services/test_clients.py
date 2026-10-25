@@ -209,6 +209,42 @@ class TestServiceClients(base.TestCase):
         self.assertIsInstance(_manager.auth_provider,
                               auth.KeystoneV3AuthProvider)
 
+    def test___init___explicit_domain_scope_with_project_credentials(self):
+        creds = fake_credentials.FakeKeystoneV3AllCredentials()
+        manager = clients.ServiceClients(
+            creds, identity_uri='fake_uri', scope='domain')
+        self.assertEqual('domain', manager.auth_provider.scope)
+        params = manager.auth_provider._auth_params()
+        self.assertEqual(creds.domain_name, params['domain_name'])
+        self.assertNotIn('project_name', params)
+        self.assertNotIn('project_id', params)
+        self.assertNotIn('system', params)
+
+    def test___init___explicit_scope_overrides_credentials(self):
+        for scope in ('project', 'domain', 'system', 'unscoped'):
+            with self.subTest(scope=scope):
+                creds = fake_credentials.FakeKeystoneV3AllCredentials()
+                manager = clients.ServiceClients(
+                    creds, identity_uri='fake_uri', scope=scope)
+                self.assertEqual(scope, manager.auth_provider.scope)
+
+    def test___init___default_scope_from_credentials(self):
+        for scope in ('project', 'system', 'domain'):
+            with self.subTest(scope=scope):
+                creds = fake_credentials.FakeKeystoneV3AllCredentials()
+                if scope != 'project':
+                    creds.project_name = None
+                if scope == 'system':
+                    creds.system = 'all'
+                manager = clients.ServiceClients(
+                    creds, identity_uri='fake_uri')
+                self.assertEqual(scope, manager.auth_provider.scope)
+
+    def test___init___default_scope_without_scope_credentials(self):
+        creds = fake_credentials.FakeKeystoneV3DomainCredentials()
+        manager = clients.ServiceClients(creds, identity_uri='fake_uri')
+        self.assertEqual('project', manager.auth_provider.scope)
+
     def test___init___base_creds_uri(self):
         creds = fake_credentials.FakeCredentials()
         uri = 'fake_uri'
