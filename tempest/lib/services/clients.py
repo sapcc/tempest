@@ -308,7 +308,8 @@ class ServiceClients(object):
         :param identity_uri: URI of the identity API. This should be a
                              mandatory parameter, and it will so soon.
         :param region: Default value of region for service clients.
-        :param scope: default scope for tokens produced by the auth provider
+        :param scope: Scope for tokens produced by the auth provider. If None,
+                      infer the scope from the credentials.
         :param disable_ssl_certificate_validation: Applies to auth and to all
                                                   service clients.
         :param ca_certs: Applies to auth and to all service clients.
@@ -347,14 +348,15 @@ class ServiceClients(object):
         self.ca_certs = ca_certs
         self.trace_requests = trace_requests
         self.proxy_url = proxy_url
-        if self.credentials.project_id or self.credentials.project_name:
-            scope = 'project'
-        elif self.credentials.system:
-            scope = 'system'
-        elif self.credentials.domain_id or self.credentials.domain_name:
-            scope = 'domain'
-        else:
-            scope = 'project'
+        if scope is None:
+            if self.credentials.project_id or self.credentials.project_name:
+                scope = 'project'
+            elif self.credentials.system:
+                scope = 'system'
+            elif self.credentials.domain_id or self.credentials.domain_name:
+                scope = 'domain'
+            else:
+                scope = 'project'
         # Creates an auth provider for the credentials
         self.auth_provider = auth_provider_class(
             self.credentials, self.identity_uri, scope=scope,
