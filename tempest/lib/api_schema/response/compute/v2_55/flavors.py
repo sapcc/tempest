@@ -74,7 +74,7 @@ common_flavor_info = {
         'os-flavor-access:is_public': {'type': 'boolean'},
         'rxtx_factor': {'type': 'number'},
         'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
-        'description': flavor_description
+        'description': flavor_description,
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and
@@ -83,6 +83,10 @@ common_flavor_info = {
                  'description']
 }
 
+common_flavor_info_with_permissions = copy.deepcopy(common_flavor_info)
+common_flavor_info_with_permissions['properties']['permissions'] = (
+    flavorsv21.flavor_permissions)
+
 list_flavors_details = {
     'status_code': [200],
     'response_body': {
@@ -90,7 +94,7 @@ list_flavors_details = {
         'properties': {
             'flavors': {
                 'type': 'array',
-                'items': common_flavor_info
+                'items': common_flavor_info_with_permissions
             },
             # NOTE(gmann): flavors_links attribute is not necessary
             # to be present always So it is not 'required'.
@@ -101,7 +105,7 @@ list_flavors_details = {
     }
 }
 
-create_update_get_flavor_details = {
+create_update_flavor_details = {
     'status_code': [200],
     'response_body': {
         'type': 'object',
@@ -112,6 +116,10 @@ create_update_get_flavor_details = {
         'required': ['flavor']
     }
 }
+
+show_flavor_details = copy.deepcopy(create_update_flavor_details)
+show_flavor_details['response_body']['properties'][
+    'flavor'] = common_flavor_info_with_permissions
 
 # Note(zhufl): Below are the unchanged schema in this microversion. We need
 # to keep this schema in this file to have the generic way to select the

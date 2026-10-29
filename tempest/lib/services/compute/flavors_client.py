@@ -60,17 +60,20 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
         self.validate_response(_schema, resp, body)
         return rest_client.ResponseBody(resp, body)
 
-    def show_flavor(self, flavor_id):
+    def show_flavor(self, flavor_id, **params):
         """Shows details for a flavor.
 
         For a full list of available parameters, please refer to the official
         API reference:
         https://docs.openstack.org/api-ref/compute/#show-flavor-details
         """
-        resp, body = self.get("flavors/%s" % flavor_id)
+        url = "flavors/%s" % flavor_id
+        if params:
+            url += '?%s' % urllib.urlencode(params)
+        resp, body = self.get(url)
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.show_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 
@@ -91,7 +94,7 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
 
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.create_update_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 
@@ -107,7 +110,7 @@ class FlavorsClient(base_compute_client.BaseComputeClient):
 
         body = json.loads(body)
         schema = self.get_schema(self.schema_versions_info)
-        self.validate_response(schema.create_update_get_flavor_details,
+        self.validate_response(schema.create_update_flavor_details,
                                resp, body)
         return rest_client.ResponseBody(resp, body)
 

@@ -39,6 +39,9 @@ class FlavorsV2TestJSON(base.BaseV2ComputeTest):
         flavors = self.flavors_client.list_flavors(detail=True)['flavors']
         flavor = self.flavors_client.show_flavor(self.flavor_ref)['flavor']
         self.assertIn(flavor, flavors)
+        # Only admin users see permissions
+        for f in flavors:
+            self.assertNotIn('permissions', f)
 
     @decorators.attr(type='smoke')
     @decorators.idempotent_id('1f12046b-753d-40d2-abb6-d8eb8b30cb2f')
@@ -46,6 +49,8 @@ class FlavorsV2TestJSON(base.BaseV2ComputeTest):
         """The expected flavor details should be returned"""
         flavor = self.flavors_client.show_flavor(self.flavor_ref)['flavor']
         self.assertEqual(self.flavor_ref, flavor['id'])
+        # Only admin users see permissions
+        self.assertNotIn('permissions', flavor)
 
     @decorators.idempotent_id('8d7691b3-6ed4-411a-abc9-2839a765adab')
     def test_list_flavors_limit_results(self):

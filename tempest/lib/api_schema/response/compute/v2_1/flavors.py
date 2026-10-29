@@ -12,7 +12,21 @@
 #    License for the specific language governing permissions and limitations
 #    under the License.
 
+import copy
+
 from tempest.lib.api_schema.response.compute.v2_1 import parameter_types
+
+# SAP flavor permission rules annotation, emitted on flavor detail/show when
+# with_permissions=true is requested and the caller holds the
+# os-flavor-permission-rules index:domain / index:project policy.
+flavor_permissions = {
+    'type': 'object',
+    'properties': {
+        'domain': {'type': 'string', 'enum': ['allow', 'deny']},
+        'project': {'type': 'string', 'enum': ['allow', 'deny']},
+    },
+    'additionalProperties': False,
+}
 
 list_flavors = {
     'status_code': [200],
@@ -56,13 +70,17 @@ common_flavor_info = {
         'OS-FLV-DISABLED:disabled': {'type': 'boolean'},
         'os-flavor-access:is_public': {'type': 'boolean'},
         'rxtx_factor': {'type': 'number'},
-        'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'}
+        'OS-FLV-EXT-DATA:ephemeral': {'type': 'integer'},
     },
     'additionalProperties': False,
     # 'OS-FLV-DISABLED', 'os-flavor-access', 'rxtx_factor' and
     # 'OS-FLV-EXT-DATA' are API extensions, so they are not 'required'.
     'required': ['name', 'links', 'ram', 'vcpus', 'swap', 'disk', 'id']
 }
+
+common_flavor_info_with_permissions = copy.deepcopy(common_flavor_info)
+common_flavor_info_with_permissions['properties']['permissions'] = (
+    flavor_permissions)
 
 list_flavors_details = {
     'status_code': [200],
@@ -71,7 +89,7 @@ list_flavors_details = {
         'properties': {
             'flavors': {
                 'type': 'array',
-                'items': common_flavor_info
+                'items': common_flavor_info_with_permissions
             },
             # NOTE(gmann): flavors_links attribute is not necessary
             # to be present always so it is not 'required'.
@@ -82,7 +100,7 @@ list_flavors_details = {
     }
 }
 
-create_update_get_flavor_details = {
+create_update_flavor_details = {
     'status_code': [200],
     'response_body': {
         'type': 'object',
@@ -93,6 +111,10 @@ create_update_get_flavor_details = {
         'required': ['flavor']
     }
 }
+
+show_flavor_details = copy.deepcopy(create_update_flavor_details)
+show_flavor_details['response_body']['properties'][
+    'flavor'] = common_flavor_info_with_permissions
 
 delete_flavor = {
     'status_code': [202]

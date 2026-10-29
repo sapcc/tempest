@@ -123,6 +123,8 @@ class Manager(clients.ServiceClients):
         self.quotas_client = self.compute.QuotasClient()
         self.quota_classes_client = self.compute.QuotaClassesClient()
         self.flavors_client = self.compute.FlavorsClient()
+        self.flavor_permission_rules_client = (
+            self.compute.FlavorPermissionRulesClient())
         self.extensions_client = self.compute.ExtensionsClient()
         self.floating_ip_pools_client = self.compute.FloatingIPPoolsClient()
         self.floating_ips_bulk_client = self.compute.FloatingIPsBulkClient()
